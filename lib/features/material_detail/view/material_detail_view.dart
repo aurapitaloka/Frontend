@@ -53,9 +53,9 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
       child: WillPopScope(
         onWillPop: () => _confirmExit(context),
         child: Scaffold(
-          backgroundColor: Colors.grey[50],
+          backgroundColor: Colors.transparent,
           appBar: AppBar(
-            backgroundColor: Colors.grey[50],
+            backgroundColor: Colors.transparent,
             elevation: 0,
             leading: IconButton(
               icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.orange),
@@ -116,35 +116,36 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Color(0xFFFFF8E1),
+                  Color(0xFFFFF3E0),
+                  Color(0xFFE3F2FD),
+                  Color(0xFFE8F5E9),
                   Color(0xFFFFFDE7),
-                  Color(0xFFFDF8E4),
                 ],
               ),
             ),
           ),
           Positioned(
-            top: -60,
-            left: -40,
+            top: -70,
+            left: -50,
             child: _softBlob(
-              size: 180,
-              color: const Color(0xFFFFE0B2),
+              size: 210,
+              color: const Color(0xFFFFD180),
             ),
           ),
           Positioned(
-            top: 120,
-            right: -50,
+            top: 140,
+            right: -60,
             child: _softBlob(
-              size: 160,
-              color: const Color(0xFFFFCC80),
+              size: 190,
+              color: const Color(0xFF81D4FA),
             ),
           ),
           Positioned(
-            bottom: -50,
-            left: -20,
+            bottom: -60,
+            left: -30,
             child: _softBlob(
-              size: 200,
-              color: const Color(0xFFFFF3E0),
+              size: 220,
+              color: const Color(0xFFA5D6A7),
             ),
           ),
           Positioned(
@@ -188,7 +189,7 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
             width: 6,
             height: 6,
             decoration: BoxDecoration(
-              color: const Color(0xFFFFCC80).withOpacity(0.6),
+              color: const Color(0xFFFFAB91).withOpacity(0.7),
               shape: BoxShape.circle,
             ),
           ),
@@ -227,7 +228,6 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
     );
   }
 
-
   Widget _buildMaterialSection() {
     final hasPdf = controller.pdfUrl != null && controller.pdfUrl!.isNotEmpty;
     if (!hasPdf) {
@@ -237,38 +237,59 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: PdfBookViewer(
-                pdfUrl: controller.pdfUrl!,
-                backgroundColor: Colors.white,
-                showNavigationControls: false,
-                onPageChanged: (current, total) {
-                  controller.updateTotalPages(total);
-                  controller.onPdfPageChanged(current);
-                },
-                onError: (_) {},
-              ),
-            ),
-          ),
-        ),
+        Expanded(child: _buildReaderCard(_buildPdfViewer())),
         const SizedBox(height: 12),
         _buildProgressBar(),
+        const SizedBox(height: 12),
+        _buildQuizCta(),
       ],
+    );
+  }
+
+  Widget _buildPdfViewer() {
+    return PdfBookViewer(
+      pdfUrl: controller.pdfUrl!,
+      backgroundColor: Colors.white,
+      showNavigationControls: false,
+      onPageChanged: (current, total) {
+        controller.updateTotalPages(total);
+        controller.onPdfPageChanged(current);
+      },
+      onError: (_) {},
+    );
+  }
+
+  Widget _buildReaderCard(Widget child) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFFFFB74D),
+            Color(0xFF4FC3F7),
+            Color(0xFF81C784),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: child,
+        ),
+      ),
     );
   }
 
@@ -284,20 +305,8 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child: Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: LayoutBuilder(
+          child: _buildReaderCard(
+            LayoutBuilder(
               builder: (context, constraints) {
                 final innerWidth = constraints.maxWidth - 36;
                 final innerHeight = constraints.maxHeight - 36;
@@ -309,33 +318,30 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
                 );
                 controller.updateTotalPages(pages.length);
 
-                return ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: PageFlipWidget(
-                    key: ValueKey(
-                      'text_flip_${pages.length}_${controller.lastSessionPage.value}',
-                    ),
-                    controller: controller.textFlipController,
-                    backgroundColor: Colors.white,
-                    initialIndex:
-                        (controller.lastSessionPage.value - 1).clamp(0, pages.length - 1),
-                    onPageFlipped: (pageIndex) {
-                      controller.onTextPageChanged(pageIndex + 1, pages.length);
-                    },
-                    children: pages
-                        .map(
-                          (text) => Container(
-                            color: Colors.white,
-                            padding: const EdgeInsets.all(18),
-                            alignment: Alignment.topLeft,
-                            child: Text(
-                              text,
-                              style: textStyle,
-                            ),
-                          ),
-                        )
-                        .toList(),
+                return PageFlipWidget(
+                  key: ValueKey(
+                    'text_flip_${pages.length}_${controller.lastSessionPage.value}',
                   ),
+                  controller: controller.textFlipController,
+                  backgroundColor: Colors.white,
+                  initialIndex:
+                      (controller.lastSessionPage.value - 1).clamp(0, pages.length - 1),
+                  onPageFlipped: (pageIndex) {
+                    controller.onTextPageChanged(pageIndex + 1, pages.length);
+                  },
+                  children: pages
+                      .map(
+                        (text) => Container(
+                          color: Colors.white,
+                          padding: const EdgeInsets.all(18),
+                          alignment: Alignment.topLeft,
+                          child: Text(
+                            text,
+                            style: textStyle,
+                          ),
+                        ),
+                      )
+                      .toList(),
                 );
               },
             ),
@@ -343,6 +349,8 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
         ),
         const SizedBox(height: 12),
         _buildProgressBar(),
+        const SizedBox(height: 12),
+        _buildQuizCta(),
       ],
     );
   }
@@ -421,6 +429,8 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
         children: [
           Row(
             children: [
+              const Icon(Icons.flag_rounded, color: AppColors.orange, size: 16),
+              const SizedBox(width: 6),
               const Text(
                 'Progress',
                 style: TextStyle(
@@ -430,27 +440,116 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
                 ),
               ),
               const Spacer(),
-              Text(
-                '$percent%',
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.orange,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.orange.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '$percent%',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.orange,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 10,
-              backgroundColor: Colors.grey[200],
-              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.orange),
+          Container(
+            height: 12,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Stack(
+                children: [
+                  Container(color: Colors.grey[200]),
+                  FractionallySizedBox(
+                    widthFactor: progress,
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Color(0xFFFF8A65),
+                            Color(0xFFFFD54F),
+                            Color(0xFF81D4FA),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
+      );
+    });
+  }
+
+  Widget _buildQuizCta() {
+    return Obx(() {
+      if (!controller.showQuizCta.value) return const SizedBox.shrink();
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Kamu sudah selesai materi ini!',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textBlack,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Yuk lanjut uji pemahamanmu di kuis.',
+              style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: ElevatedButton(
+                onPressed: controller.goToQuizIntro,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.orange,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Lanjut ke Kuis'),
+              ),
+            ),
+          ],
+        ),
       );
     });
   }

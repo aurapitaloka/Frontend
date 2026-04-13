@@ -18,4 +18,5 @@ class AppRoutes {
   static const String webview = '/webview';
   static const String aac = '/aac';
   static const String panduan = '/panduan';
+  static const String materiQuizIntro = '/materi-quiz-intro';
 }

@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../../core/utils/app_colors.dart';
 import '../../dashboard/controller/dashboard_controller.dart';
 import '../../../core/widgets/voice_command_scope.dart';
 import '../../../core/widgets/voice_command_button.dart';
+import '../../../routes/app_routes.dart';
 
 class YoutubeResultView extends GetView<DashboardController> {
   const YoutubeResultView({super.key});
@@ -219,14 +218,12 @@ class YoutubeResultView extends GetView<DashboardController> {
 
   Future<void> _openYoutubeVideo(String? videoId) async {
     if (videoId == null || videoId.isEmpty) return;
-    final url = Uri.parse('https://www.youtube.com/watch?v=$videoId');
-    final ok = await launchUrl(url, mode: LaunchMode.externalApplication);
-    if (!ok) {
-      Get.snackbar(
-        'Gagal membuka video',
-        'Tidak bisa membuka YouTube di perangkat ini.',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-    }
+    Get.toNamed(
+      AppRoutes.webview,
+      arguments: {
+        'title': 'YouTube',
+        'url': 'https://www.youtube.com/watch?v=$videoId',
+      },
+    );
   }
 }

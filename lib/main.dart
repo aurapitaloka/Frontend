@@ -1,12 +1,17 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'core/controllers/voice_command_controller.dart';
 import 'routes/app_pages.dart';
 import 'routes/app_routes.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  if (Platform.isAndroid) {
+    AndroidWebViewPlatform.registerWith();
+  }
   try {
     await dotenv.load(fileName: '.env');
   } catch (_) {

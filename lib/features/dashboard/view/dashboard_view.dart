@@ -13,6 +13,9 @@ import '../../profile/binding/profile_binding.dart';
 import '../../profile/controller/profile_controller.dart';
 import '../../rak_buku/binding/rak_buku_binding.dart';
 import '../../rak_buku/controller/rak_buku_controller.dart';
+import '../../aac/binding/aac_binding.dart';
+import '../../aac/controller/aac_controller.dart';
+import '../../aac/view/aac_view.dart';
 
 class DashboardView extends GetView<DashboardController> {
   const DashboardView({super.key});
@@ -114,7 +117,7 @@ class DashboardView extends GetView<DashboardController> {
         }
         return const RakBukuView();
       case 2:
-        return GetWidgetAacView();
+        return _getAacView();
       case 3:
         if (!Get.isRegistered<ProfileController>()) {
           ProfileBinding().dependencies();
@@ -123,13 +126,14 @@ class DashboardView extends GetView<DashboardController> {
       default:
         return _buildHomeContent();
     }
+  }
+
   // Tambahkan widget pembungkus untuk AAC agar tidak menggunakan Get.toNamed di sini
-  Widget GetWidgetAacView() {
+  Widget _getAacView() {
     if (!Get.isRegistered<AacController>()) {
       AacBinding().dependencies();
     }
     return const AacView();
-  }
   }
 
   Widget _buildHomeContent() {
@@ -330,7 +334,7 @@ Container(
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: const Text(
-                                '📚 Lanjutkan Belajar',
+                                '?? Lanjutkan Belajar',
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
@@ -980,9 +984,15 @@ Container(
   Widget _buildYoutubeItem(Map<String, dynamic> video) {
     return GestureDetector(
       onTap: () {
-        // Logika untuk membuka pemutar video YouTube
-        // Bisa menggunakan package youtube_player_flutter dan membukanya di halaman baru
-        debugPrint("Buka Video: ${video['videoId']}");
+        final videoId = video['videoId']?.toString();
+        if (videoId == null || videoId.isEmpty) return;
+        Get.toNamed(
+          AppRoutes.webview,
+          arguments: {
+            'title': 'YouTube',
+            'url': 'https://www.youtube.com/watch?v=$videoId',
+          },
+        );
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),

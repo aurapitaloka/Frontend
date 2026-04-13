@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:page_flip/page_flip.dart';
+import '../../../routes/app_routes.dart';
 import '../../../core/services/rak_buku_service.dart';
 import '../../../core/services/sesi_baca_service.dart';
 import '../../../core/controllers/voice_command_controller.dart';
@@ -20,6 +21,8 @@ class MaterialDetailController extends GetxController {
   int? materiId;
   int? fiksiId;
   String? _storageKey;
+  String? _quizPromptKey;
+  bool _quizPromptedThisSession = false;
 
   // ===============================
   // STATE
@@ -27,6 +30,7 @@ class MaterialDetailController extends GetxController {
   final RxBool inRak = false.obs;
   final RxBool gazeEnabled = false.obs;
   final RxBool voiceEnabled = false.obs;
+  final RxBool showQuizCta = false.obs;
   final VoiceCommandController voiceCommandController = Get.find<VoiceCommandController>();
 
   final PageFlipController textFlipController = PageFlipController();
@@ -64,6 +68,7 @@ class MaterialDetailController extends GetxController {
       _storageKey = 'fiksi_${fiksiId}_last_page';
     } else if (materiId != null) {
       _storageKey = 'materi_${materiId}_last_page';
+      _quizPromptKey = 'materi_${materiId}_quiz_prompted';
     }
 
     if (materiId != null) {
@@ -218,7 +223,38 @@ class MaterialDetailController extends GetxController {
         'progres_persen': persen,
       });
     } catch (_) {}
+    await _updateQuizCta(persen);
   }
 
   int get totalPages => _totalPages;
+
+  Future<void> _updateQuizCta(int persen) async {
+    if (materiId == null) return;
+    if (persen < 100) {
+      showQuizCta.value = false;
+      return;
+    }
+    final prefs = await SharedPreferences.getInstance();
+    final wasPrompted = _quizPromptKey != null
+        ? (prefs.getBool(_quizPromptKey!) ?? false)
+        : false;
+    if (!wasPrompted) {
+      if (_quizPromptKey != null) {
+        await prefs.setBool(_quizPromptKey!, true);
+      }
+    }
+    _quizPromptedThisSession = true;
+    showQuizCta.value = true;
+  }
+
+  void goToQuizIntro() {
+    if (materiId == null) return;
+    Get.toNamed(
+      AppRoutes.materiQuizIntro,
+      arguments: {
+        'materi_id': materiId,
+        'materi_title': title,
+      },
+    );
+  }
 }

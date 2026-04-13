@@ -30,6 +30,8 @@ import '../features/aac/binding/aac_binding.dart';
 import '../features/aac/view/aac_view.dart';
 import '../features/panduan/binding/panduan_binding.dart';
 import '../features/panduan/view/panduan_view.dart';
+import '../features/quiz/binding/materi_quiz_intro_binding.dart';
+import '../features/quiz/view/materi_quiz_intro_view.dart';
 import 'app_routes.dart';
 
 class AppPages {
@@ -116,6 +118,11 @@ class AppPages {
       name: AppRoutes.panduan,
       page: () => const PanduanView(),
       binding: PanduanBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.materiQuizIntro,
+      page: () => const MateriQuizIntroView(),
+      binding: MateriQuizIntroBinding(),
     ),
     GetPage(
       name: AppRoutes.webview,

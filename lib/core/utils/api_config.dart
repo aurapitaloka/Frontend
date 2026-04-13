@@ -1,6 +1,6 @@
 class ApiConfig {
   // Ganti dengan URL backend Anda
-  static const String baseUrl = 'https://aea5-103-173-139-86.ngrok-free.app/api';
+  static const String baseUrl = 'https://8d93-114-10-20-130.ngrok-free.app/api';
   static String get baseHost =>
       baseUrl.endsWith('/api')
           ? baseUrl.substring(0, baseUrl.length - 4)
