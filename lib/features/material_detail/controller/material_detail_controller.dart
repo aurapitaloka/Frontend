@@ -22,7 +22,6 @@ class MaterialDetailController extends GetxController {
   int? fiksiId;
   String? _storageKey;
   String? _quizPromptKey;
-  bool _quizPromptedThisSession = false;
 
   // ===============================
   // STATE
@@ -31,10 +30,12 @@ class MaterialDetailController extends GetxController {
   final RxBool gazeEnabled = false.obs;
   final RxBool voiceEnabled = false.obs;
   final RxBool showQuizCta = false.obs;
-  final VoiceCommandController voiceCommandController = Get.find<VoiceCommandController>();
+  final VoiceCommandController voiceCommandController =
+      Get.find<VoiceCommandController>();
 
   final PageFlipController textFlipController = PageFlipController();
-
+  Future<void> Function()? _nextPdfPage;
+  Future<void> Function()? _previousPdfPage;
 
   /// dipakai view (FutureBuilder)
 
@@ -59,7 +60,8 @@ class MaterialDetailController extends GetxController {
     title = args['title'] ?? 'Judul Materi';
     subtitle = args['subtitle'] ?? '';
     category = args['category'] ?? '';
-    coverImage = args['coverImage'] ??
+    coverImage =
+        args['coverImage'] ??
         'https://images.unsplash.com/photo-1521587760476-6c12a4b040da';
     body = args['body'] ?? _fallbackBody;
 
@@ -121,8 +123,7 @@ class MaterialDetailController extends GetxController {
     if (_storageKey == null) return;
 
     final prefs = await SharedPreferences.getInstance();
-    lastSessionPage.value =
-        prefs.getInt(_storageKey!) ?? 1;
+    lastSessionPage.value = prefs.getInt(_storageKey!) ?? 1;
   }
 
   // ===============================
@@ -159,16 +160,36 @@ class MaterialDetailController extends GetxController {
   // ===============================
   @override
   void onClose() {
+    clearPdfPageControls();
     super.onClose();
   }
 
+  void registerPdfPageControls({
+    required Future<void> Function() nextPage,
+    required Future<void> Function() previousPage,
+  }) {
+    _nextPdfPage = nextPage;
+    _previousPdfPage = previousPage;
+  }
+
+  void clearPdfPageControls() {
+    _nextPdfPage = null;
+    _previousPdfPage = null;
+  }
+
   Future<void> nextPage() async {
-    if (pdfUrl != null && pdfUrl!.isNotEmpty) return;
+    if (pdfUrl != null && pdfUrl!.isNotEmpty) {
+      await _nextPdfPage?.call();
+      return;
+    }
     textFlipController.nextPage();
   }
 
   Future<void> previousPage() async {
-    if (pdfUrl != null && pdfUrl!.isNotEmpty) return;
+    if (pdfUrl != null && pdfUrl!.isNotEmpty) {
+      await _previousPdfPage?.call();
+      return;
+    }
     textFlipController.previousPage();
   }
 
@@ -243,7 +264,6 @@ class MaterialDetailController extends GetxController {
         await prefs.setBool(_quizPromptKey!, true);
       }
     }
-    _quizPromptedThisSession = true;
     showQuizCta.value = true;
   }
 
@@ -251,10 +271,7 @@ class MaterialDetailController extends GetxController {
     if (materiId == null) return;
     Get.toNamed(
       AppRoutes.materiQuizIntro,
-      arguments: {
-        'materi_id': materiId,
-        'materi_title': title,
-      },
+      arguments: {'materi_id': materiId, 'materi_title': title},
     );
   }
 }

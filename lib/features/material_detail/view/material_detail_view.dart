@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:page_flip/page_flip.dart';
-import 'package:flutter_pdf_flipbook/flutter_pdf_flipbook.dart';
+import 'package:http/http.dart' as http;
+import 'package:pdfx/pdfx.dart';
 import '../../../core/utils/app_colors.dart';
 import '../../../core/widgets/voice_command_scope.dart';
 import '../../../core/controllers/voice_command_controller.dart';
@@ -58,7 +59,10 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
             backgroundColor: Colors.transparent,
             elevation: 0,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.orange),
+              icon: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: AppColors.orange,
+              ),
               onPressed: () async {
                 if (await _confirmExit(context)) {
                   Get.back();
@@ -70,8 +74,12 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
                 () => IconButton(
                   onPressed: controller.toggleRak,
                   icon: Icon(
-                    controller.inRak.value ? Icons.library_books_rounded : Icons.library_add_rounded,
-                    color: controller.inRak.value ? AppColors.yellow : AppColors.orange,
+                    controller.inRak.value
+                        ? Icons.library_books_rounded
+                        : Icons.library_add_rounded,
+                    color: controller.inRak.value
+                        ? AppColors.yellow
+                        : AppColors.orange,
                   ),
                   tooltip: 'Rak Buku',
                 ),
@@ -81,7 +89,9 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
                   onPressed: controller.toggleVoice,
                   icon: Icon(
                     Icons.volume_up_rounded,
-                    color: controller.voiceEnabled.value ? AppColors.orange : Colors.grey,
+                    color: controller.voiceEnabled.value
+                        ? AppColors.orange
+                        : Colors.grey,
                   ),
                   tooltip: 'Suara',
                 ),
@@ -93,11 +103,7 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
             child: Stack(
               children: [
                 _buildBackground(),
-                Column(
-                  children: [
-                    Expanded(child: _buildContent()),
-                  ],
-                ),
+                Column(children: [Expanded(child: _buildContent())]),
               ],
             ),
           ),
@@ -127,32 +133,19 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
           Positioned(
             top: -70,
             left: -50,
-            child: _softBlob(
-              size: 210,
-              color: const Color(0xFFFFD180),
-            ),
+            child: _softBlob(size: 210, color: const Color(0xFFFFD180)),
           ),
           Positioned(
             top: 140,
             right: -60,
-            child: _softBlob(
-              size: 190,
-              color: const Color(0xFF81D4FA),
-            ),
+            child: _softBlob(size: 190, color: const Color(0xFF81D4FA)),
           ),
           Positioned(
             bottom: -60,
             left: -30,
-            child: _softBlob(
-              size: 220,
-              color: const Color(0xFFA5D6A7),
-            ),
+            child: _softBlob(size: 220, color: const Color(0xFFA5D6A7)),
           ),
-          Positioned(
-            bottom: 80,
-            right: 20,
-            child: _dotGrid(),
-          ),
+          Positioned(bottom: 80, right: 20, child: _dotGrid()),
         ],
       ),
     );
@@ -247,15 +240,14 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
   }
 
   Widget _buildPdfViewer() {
-    return PdfBookViewer(
+    return _LargePdfViewer(
       pdfUrl: controller.pdfUrl!,
-      backgroundColor: Colors.white,
-      showNavigationControls: false,
+      onControlsReady: controller.registerPdfPageControls,
+      onControlsDisposed: controller.clearPdfPageControls,
       onPageChanged: (current, total) {
         controller.updateTotalPages(total);
         controller.onPdfPageChanged(current);
       },
-      onError: (_) {},
     );
   }
 
@@ -265,11 +257,7 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [
-            Color(0xFFFFB74D),
-            Color(0xFF4FC3F7),
-            Color(0xFF81C784),
-          ],
+          colors: [Color(0xFFFFB74D), Color(0xFF4FC3F7), Color(0xFF81C784)],
         ),
         borderRadius: BorderRadius.circular(18),
       ),
@@ -285,10 +273,7 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
             ),
           ],
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: child,
-        ),
+        child: ClipRRect(borderRadius: BorderRadius.circular(16), child: child),
       ),
     );
   }
@@ -324,8 +309,10 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
                   ),
                   controller: controller.textFlipController,
                   backgroundColor: Colors.white,
-                  initialIndex:
-                      (controller.lastSessionPage.value - 1).clamp(0, pages.length - 1),
+                  initialIndex: (controller.lastSessionPage.value - 1).clamp(
+                    0,
+                    pages.length - 1,
+                  ),
                   onPageFlipped: (pageIndex) {
                     controller.onTextPageChanged(pageIndex + 1, pages.length);
                   },
@@ -335,10 +322,7 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
                           color: Colors.white,
                           padding: const EdgeInsets.all(18),
                           alignment: Alignment.topLeft,
-                          child: Text(
-                            text,
-                            style: textStyle,
-                          ),
+                          child: Text(text, style: textStyle),
                         ),
                       )
                       .toList(),
@@ -441,7 +425,10 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
               ),
               const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.orange.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(12),
@@ -553,5 +540,140 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
       );
     });
   }
+}
 
+class _LargePdfViewer extends StatefulWidget {
+  const _LargePdfViewer({
+    required this.pdfUrl,
+    required this.onControlsReady,
+    required this.onControlsDisposed,
+    required this.onPageChanged,
+  });
+
+  final String pdfUrl;
+  final void Function({
+    required Future<void> Function() nextPage,
+    required Future<void> Function() previousPage,
+  })
+  onControlsReady;
+  final VoidCallback onControlsDisposed;
+  final void Function(int currentPage, int totalPages) onPageChanged;
+
+  @override
+  State<_LargePdfViewer> createState() => _LargePdfViewerState();
+}
+
+class _LargePdfViewerState extends State<_LargePdfViewer> {
+  PdfController? _pdfController;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPdf();
+  }
+
+  @override
+  void didUpdateWidget(covariant _LargePdfViewer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.pdfUrl != widget.pdfUrl) {
+      _pdfController?.dispose();
+      _pdfController = null;
+      _loadPdf();
+    }
+  }
+
+  void _loadPdf() {
+    _pdfController = PdfController(
+      document: _openNetworkPdf(widget.pdfUrl),
+      viewportFraction: 1,
+    );
+    widget.onControlsReady(
+      nextPage: _goToNextPage,
+      previousPage: _goToPreviousPage,
+    );
+  }
+
+  Future<PdfDocument> _openNetworkPdf(String url) async {
+    final response = await http.get(Uri.parse(url));
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Gagal memuat file materi (${response.statusCode})');
+    }
+    return PdfDocument.openData(response.bodyBytes);
+  }
+
+  Future<void> _goToNextPage() async {
+    final controller = _pdfController;
+    final totalPages = controller?.pagesCount;
+    if (controller == null || totalPages == null) return;
+    if (controller.page >= totalPages) return;
+
+    await controller.nextPage(
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  Future<void> _goToPreviousPage() async {
+    final controller = _pdfController;
+    if (controller == null || controller.pagesCount == null) return;
+    if (controller.page <= 1) return;
+
+    await controller.previousPage(
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  @override
+  void dispose() {
+    widget.onControlsDisposed();
+    _pdfController?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = _pdfController;
+    if (controller == null) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.orange),
+      );
+    }
+
+    return PdfView(
+      controller: controller,
+      scrollDirection: Axis.horizontal,
+      pageSnapping: true,
+      backgroundDecoration: const BoxDecoration(color: Colors.white),
+      onDocumentLoaded: (document) {
+        widget.onPageChanged(controller.page, document.pagesCount);
+      },
+      onPageChanged: (page) {
+        widget.onPageChanged(page, controller.pagesCount ?? 1);
+      },
+      builders: PdfViewBuilders<DefaultBuilderOptions>(
+        options: const DefaultBuilderOptions(),
+        documentLoaderBuilder: (_) => const Center(
+          child: CircularProgressIndicator(color: AppColors.orange),
+        ),
+        pageLoaderBuilder: (_) => const Center(
+          child: CircularProgressIndicator(color: AppColors.orange),
+        ),
+        errorBuilder: (_, error) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Text(
+              error.toString(),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.textBlack,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

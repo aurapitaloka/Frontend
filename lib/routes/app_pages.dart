@@ -10,7 +10,6 @@ import '../features/dashboard/view/dashboard_view.dart';
 import '../features/dashboard/binding/dashboard_binding.dart';
 import '../features/profile/view/edit_profile_view.dart';
 import '../features/profile/binding/edit_profile_binding.dart';
-import '../features/profile/view/profile_notifications_view.dart';
 import '../features/profile/view/profile_about_view.dart';
 import '../features/profile/view/profile_quiz_view.dart';
 import '../features/profile/view/profile_notes_view.dart';
@@ -62,14 +61,7 @@ class AppPages {
       page: () => const EditProfileView(),
       binding: EditProfileBinding(),
     ),
-    GetPage(
-      name: AppRoutes.profileNotifications,
-      page: () => const ProfileNotificationsView(),
-    ),
-    GetPage(
-      name: AppRoutes.profileAbout,
-      page: () => const ProfileAboutView(),
-    ),
+    GetPage(name: AppRoutes.profileAbout, page: () => const ProfileAboutView()),
     GetPage(
       name: AppRoutes.profileQuiz,
       page: () => const ProfileQuizView(),
@@ -124,9 +116,6 @@ class AppPages {
       page: () => const MateriQuizIntroView(),
       binding: MateriQuizIntroBinding(),
     ),
-    GetPage(
-      name: AppRoutes.webview,
-      page: () => const FeatureWebView(),
-    ),
-      ];
+    GetPage(name: AppRoutes.webview, page: () => const FeatureWebView()),
+  ];
 }

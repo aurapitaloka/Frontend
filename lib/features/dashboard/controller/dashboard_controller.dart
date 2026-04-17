@@ -31,9 +31,11 @@ class DashboardController extends GetxController {
   final RxInt lastSessionPage = RxInt(0);
 
   // Variabel baru untuk fitur YouTube
-  final RxList<Map<String, dynamic>> youtubeVideos = <Map<String, dynamic>>[].obs;
+  final RxList<Map<String, dynamic>> youtubeVideos =
+      <Map<String, dynamic>>[].obs;
   final RxBool isLoadingYoutube = false.obs;
-  final RxString youtubeSearchQuery = ''.obs; // Menyimpan teks yang diucapkan user
+  final RxString youtubeSearchQuery =
+      ''.obs; // Menyimpan teks yang diucapkan user
   final RxString youtubeErrorMessage = ''.obs;
   final TextEditingController searchController = TextEditingController();
   final ScrollController homeScrollController = ScrollController();
@@ -94,7 +96,7 @@ class DashboardController extends GetxController {
     youtubeVideos.clear();
     isLoadingYoutube.value = true;
     Get.to(() => const YoutubeResultView());
-    
+
     try {
       final videos = await YoutubeAiService.searchVideoWithAi(query);
       youtubeVideos.assignAll(videos);
@@ -143,7 +145,10 @@ class DashboardController extends GetxController {
         found = item;
         break;
       }
-      final words = normalizedQuery.split(' ').where((e) => e.isNotEmpty).toList();
+      final words = normalizedQuery
+          .split(' ')
+          .where((e) => e.isNotEmpty)
+          .toList();
       if (words.isNotEmpty && words.every(normalizedTitle.contains)) {
         found = item;
         break;
@@ -174,8 +179,11 @@ class DashboardController extends GetxController {
         'title': title,
         'subtitle': semester,
         'category': 'Mata Pelajaran',
-        'body': kontenTeks?.isNotEmpty == true ? kontenTeks : 'Materi tidak tersedia.',
-        'coverImage': coverUrl ??
+        'body': kontenTeks?.isNotEmpty == true
+            ? kontenTeks
+            : 'Materi tidak tersedia.',
+        'coverImage':
+            coverUrl ??
             'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=1200&q=80',
         'pdfUrl': pdfUrl,
         'materi_id': found['id'],
@@ -252,7 +260,9 @@ class DashboardController extends GetxController {
       debugPrint('[Dashboard] fetchProfile response -> $response');
       final userCandidate = response['user'] ?? response;
       if (userCandidate is Map<String, dynamic>) {
-        final name = userCandidate['nama']?.toString() ?? userCandidate['name']?.toString();
+        final name =
+            userCandidate['nama']?.toString() ??
+            userCandidate['name']?.toString();
         if (name != null && name.isNotEmpty) {
           userName.value = name;
         }
@@ -299,11 +309,16 @@ class DashboardController extends GetxController {
     errorMessage.value = '';
     try {
       final useLevelId = levelId ?? selectedLevelId.value;
-      final levelParam = (useLevelId != null && useLevelId > 0) ? useLevelId : null;
+      final levelParam = (useLevelId != null && useLevelId > 0)
+          ? useLevelId
+          : null;
       debugPrint(
         '[Dashboard] fetchMateri -> endpoint=${ApiConfig.materiEndpoint}, levelId=$levelParam',
       );
-      final response = await MateriService.getAll(perPage: 50, levelId: levelParam);
+      final response = await MateriService.getAll(
+        perPage: 50,
+        levelId: levelParam,
+      );
       debugPrint('[Dashboard] fetchMateri response -> $response');
       final list = _extractList(response);
       if (list != null) {
@@ -339,7 +354,10 @@ class DashboardController extends GetxController {
       debugPrint(
         '[Dashboard] fetchFiksi -> endpoint=${ApiConfig.fiksiEndpoint}, page=$page',
       );
-      final response = await FiksiService.getAll(page: page, perPage: perPage ?? 10);
+      final response = await FiksiService.getAll(
+        page: page,
+        perPage: perPage ?? 10,
+      );
       debugPrint('[Dashboard] fetchFiksi response -> $response');
       final list = _extractList(response);
       if (list != null) {
@@ -361,7 +379,8 @@ class DashboardController extends GetxController {
   void _ensureSelectedLevel() {
     if (levels.isEmpty) return;
     final currentId = selectedLevelId.value;
-    if (currentId == null || currentId <= 0 ||
+    if (currentId == null ||
+        currentId <= 0 ||
         levels.every((level) => _parseLevelId(level['id']) != currentId)) {
       selectedLevelId.value = -1;
       selectedLevelName.value = 'Semua';
@@ -455,7 +474,6 @@ class DashboardController extends GetxController {
         'Selamat datang di AKSES. Gunakan tab bawah atau ucapkan dashboard, '
         'rak buku, atau profil untuk berpindah halaman. '
         'Untuk AAC/komunikasi, buka dari menu profil. '
-        'Ucapkan notifikasi untuk membuka notifikasi. '
         'Ucapkan kembali atau tutup untuk kembali. '
         'Ucapkan stop, berhenti, atau diam untuk menghentikan pendengaran. '
         'Saat membaca materi, ucapkan mulai membaca untuk mengaktifkan perintah, '
@@ -724,26 +742,23 @@ class _GuideDialog extends StatelessWidget {
                   label: 'Navigasi Halaman',
                 ),
                 const SizedBox(height: 8),
-                guideChipRowBuilder(labels: const [
-                  'dashboard / beranda',
-                  'rak buku',
-                  'profil / profile',
-                  'aac / komunikasi',
-                ]),
+                guideChipRowBuilder(
+                  labels: const [
+                    'dashboard / beranda',
+                    'rak buku',
+                    'profil / profile',
+                    'aac / komunikasi',
+                  ],
+                ),
                 const SizedBox(height: 6),
-                guideChipRowBuilder(labels: const [
-                  'notifikasi',
-                  'kembali / tutup',
-                  'stop / berhenti / diam',
-                ]),
+                guideChipRowBuilder(
+                  labels: const ['kembali / tutup', 'stop / berhenti / diam'],
+                ),
 
                 const SizedBox(height: 16),
 
                 // Divider
-                Container(
-                  height: 1,
-                  color: const Color(0xFFF0F0F0),
-                ),
+                Container(height: 1, color: const Color(0xFFF0F0F0)),
 
                 const SizedBox(height: 16),
 
@@ -753,12 +768,14 @@ class _GuideDialog extends StatelessWidget {
                   label: 'Saat Membaca Materi',
                 ),
                 const SizedBox(height: 8),
-                guideChipRowBuilder(labels: const [
-                  'mulai / mulai membaca',
-                  'lanjut / selanjutnya',
-                  'halaman berikutnya',
-                  'sebelumnya',
-                ]),
+                guideChipRowBuilder(
+                  labels: const [
+                    'mulai / mulai membaca',
+                    'lanjut / selanjutnya',
+                    'halaman berikutnya',
+                    'sebelumnya',
+                  ],
+                ),
               ],
             ),
           ),
@@ -773,7 +790,10 @@ class _GuideDialog extends StatelessWidget {
                     onPressed: onClose,
                     style: OutlinedButton.styleFrom(
                       foregroundColor: const Color(0xFFFF8F00),
-                      side: const BorderSide(color: Color(0xFFFFCC80), width: 1.2),
+                      side: const BorderSide(
+                        color: Color(0xFFFFCC80),
+                        width: 1.2,
+                      ),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
@@ -781,7 +801,10 @@ class _GuideDialog extends StatelessWidget {
                     ),
                     child: const Text(
                       'Tutup',
-                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
                 ),
@@ -792,7 +815,10 @@ class _GuideDialog extends StatelessWidget {
                     icon: const Icon(Icons.volume_up_rounded, size: 18),
                     label: const Text(
                       'Putar Suara',
-                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFFF8F00),

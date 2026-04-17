@@ -41,8 +41,6 @@ class ProfileView extends GetView<ProfileController> {
         'edit profil': controller.navigateToProfileSettings,
         'ubah profil': controller.navigateToProfileSettings,
         'buka pengaturan': controller.navigateToProfileSettings,
-        'notifikasi': controller.navigateToNotifications,
-        'buka notifikasi': controller.navigateToNotifications,
         'tentang kami': controller.navigateToAboutUs,
         'tentang aplikasi': controller.navigateToAboutUs,
         'info aplikasi': controller.navigateToAboutUs,
@@ -52,7 +50,8 @@ class ProfileView extends GetView<ProfileController> {
         'buka catatan': () => Get.toNamed(AppRoutes.profileNotes),
         'pengaturan suara': () => Get.toNamed(AppRoutes.profileVoiceSettings),
         'setelan suara': () => Get.toNamed(AppRoutes.profileVoiceSettings),
-        'buka pengaturan suara': () => Get.toNamed(AppRoutes.profileVoiceSettings),
+        'buka pengaturan suara': () =>
+            Get.toNamed(AppRoutes.profileVoiceSettings),
         'panduan': () => Get.toNamed(AppRoutes.panduan),
         'buka panduan': () => Get.toNamed(AppRoutes.panduan),
         'scroll': () => scrollBy(320),
@@ -87,276 +86,266 @@ class ProfileView extends GetView<ProfileController> {
                   title: 'Profile',
                   trailing: const VoiceCommandButton(),
                 ),
-              const SizedBox(height: 18),
+                const SizedBox(height: 18),
 
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              // Profile Card
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.06),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
+                // Profile Card
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.06),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Obx(
+                      () => Column(
+                        children: [
+                          // Profile Picture
+                          Stack(
+                            children: [
+                              Container(
+                                width: 90,
+                                height: 90,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      AppColors.orange,
+                                      AppColors.orange.withOpacity(0.7),
+                                    ],
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.orange.withOpacity(0.3),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: controller.profileImageUrl.value.isEmpty
+                                    ? const Icon(
+                                        Icons.person,
+                                        size: 45,
+                                        color: Colors.white,
+                                      )
+                                    : ClipOval(
+                                        child: Image.network(
+                                          controller.profileImageUrl.value,
+                                          fit: BoxFit.cover,
+                                          errorBuilder:
+                                              (context, error, stackTrace) {
+                                                return const Icon(
+                                                  Icons.person,
+                                                  size: 45,
+                                                  color: Colors.white,
+                                                );
+                                              },
+                                        ),
+                                      ),
+                              ),
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.yellow,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.camera_alt_rounded,
+                                    size: 14,
+                                    color: AppColors.orange,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          // Name
+                          Text(
+                            controller.userName.value,
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textBlack,
+                              fontFamily: 'Roboto',
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            controller.userEmail.value,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                              fontFamily: 'Roboto',
+                            ),
+                          ),
+                          if (controller.isLoading.value)
+                            const Padding(
+                              padding: EdgeInsets.only(top: 10),
+                              child: SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            ),
+                          if (controller.errorMessage.value.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 10),
+                              child: Text(
+                                controller.errorMessage.value,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.red[400],
+                                  fontFamily: 'Roboto',
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // Statistics Cards
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _buildStatCard(
+                          icon: Icons.check_circle_rounded,
+                          number: controller.completedMaterials.value
+                              .toString(),
+                          label: 'Materi',
+                          subLabel: 'Terselesaikan',
+                          color: const Color(0xFF4CAF50),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: _buildStatCard(
+                          icon: Icons.access_time_rounded,
+                          number: controller.pendingMaterials.value.toString(),
+                          label: 'Materi',
+                          subLabel: 'Menunggu',
+                          color: const Color(0xFFFF9800),
+                        ),
                       ),
                     ],
                   ),
-                  child: Obx(
-                    () => Column(
-                      children: [
-                        // Profile Picture
-                        Stack(
-                          children: [
-                            Container(
-                              width: 90,
-                              height: 90,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: LinearGradient(
-                                  colors: [
-                                    AppColors.orange,
-                                    AppColors.orange.withOpacity(0.7),
-                                  ],
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.orange.withOpacity(0.3),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: controller.profileImageUrl.value.isEmpty
-                                  ? const Icon(
-                                      Icons.person,
-                                      size: 45,
-                                      color: Colors.white,
-                                    )
-                                  : ClipOval(
-                                      child: Image.network(
-                                        controller.profileImageUrl.value,
-                                        fit: BoxFit.cover,
-                                        errorBuilder:
-                                            (context, error, stackTrace) {
-                                              return const Icon(
-                                                Icons.person,
-                                                size: 45,
-                                                color: Colors.white,
-                                              );
-                                            },
-                                      ),
-                                    ),
-                            ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: AppColors.yellow,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Colors.white,
-                                    width: 2,
-                                  ),
-                                ),
-                                child: const Icon(
-                                  Icons.camera_alt_rounded,
-                                  size: 14,
-                                  color: AppColors.orange,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        // Name
-                        Text(
-                          controller.userName.value,
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textBlack,
-                            fontFamily: 'Roboto',
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          controller.userEmail.value,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey[600],
-                            fontFamily: 'Roboto',
-                          ),
-                        ),
-                        if (controller.isLoading.value)
-                          const Padding(
-                            padding: EdgeInsets.only(top: 10),
-                            child: SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          ),
-                        if (controller.errorMessage.value.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 10),
-                            child: Text(
-                              controller.errorMessage.value,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.red[400],
-                                fontFamily: 'Roboto',
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
                 ),
-              ),
 
-              const SizedBox(height: 20),
+                const SizedBox(height: 28),
 
-              // Statistics Cards
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatCard(
-                        icon: Icons.check_circle_rounded,
-                        number: controller.completedMaterials.value.toString(),
-                        label: 'Materi',
-                        subLabel: 'Terselesaikan',
+                // Kelola Akun Section
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Kelola Akun',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textBlack,
+                          fontFamily: 'Roboto',
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      _buildMenuItem(
+                        icon: Icons.settings_rounded,
+                        title: 'Pengaturan Profile',
+                        onTap: controller.navigateToProfileSettings,
+                        color: const Color(0xFF2196F3),
+                      ),
+                      const SizedBox(height: 10),
+                      _buildMenuItem(
+                        icon: Icons.info_rounded,
+                        title: 'Tentang Kami',
+                        onTap: controller.navigateToAboutUs,
+                        color: const Color(0xFF00BCD4),
+                      ),
+                      const SizedBox(height: 10),
+                      _buildMenuItem(
+                        icon: Icons.help_outline_rounded,
+                        title: 'Panduan',
+                        onTap: () => Get.toNamed(AppRoutes.panduan),
+                        color: const Color(0xFF8E24AA),
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'Fitur Siswa',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textBlack,
+                          fontFamily: 'Roboto',
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      _buildMenuItem(
+                        icon: Icons.quiz_rounded,
+                        title: 'Kuis',
+                        onTap: () {
+                          Get.toNamed(AppRoutes.profileQuiz);
+                        },
                         color: const Color(0xFF4CAF50),
                       ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: _buildStatCard(
-                        icon: Icons.access_time_rounded,
-                        number: controller.pendingMaterials.value.toString(),
-                        label: 'Materi',
-                        subLabel: 'Menunggu',
-                        color: const Color(0xFFFF9800),
+                      const SizedBox(height: 10),
+                      _buildMenuItem(
+                        icon: Icons.note_rounded,
+                        title: 'Catatan',
+                        onTap: () {
+                          Get.toNamed(AppRoutes.profileNotes);
+                        },
+                        color: const Color(0xFF3F51B5),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 10),
+                      _buildMenuItem(
+                        icon: Icons.record_voice_over_rounded,
+                        title: 'Pengaturan Suara',
+                        onTap: () {
+                          Get.toNamed(AppRoutes.profileVoiceSettings);
+                        },
+                        color: const Color(0xFFFF7043),
+                      ),
+                      const SizedBox(height: 10),
+                      _buildMenuItem(
+                        icon: Icons.logout_rounded,
+                        title: 'Keluar',
+                        onTap: () async {
+                          if (await _confirmLogout(context)) {
+                            controller.logout();
+                          }
+                        },
+                        color: Colors.red,
+                        isLogout: true,
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
                 ),
-              ),
-
-              const SizedBox(height: 28),
-
-              // Kelola Akun Section
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Kelola Akun',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textBlack,
-                        fontFamily: 'Roboto',
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    _buildMenuItem(
-                      icon: Icons.settings_rounded,
-                      title: 'Pengaturan Profile',
-                      onTap: controller.navigateToProfileSettings,
-                      color: const Color(0xFF2196F3),
-                    ),
-                    const SizedBox(height: 10),
-                    _buildMenuItem(
-                      icon: Icons.notifications_rounded,
-                      title: 'Notifikasi',
-                      onTap: controller.navigateToNotifications,
-                      color: const Color(0xFF9C27B0),
-                    ),
-                    const SizedBox(height: 10),
-                    _buildMenuItem(
-                      icon: Icons.info_rounded,
-                      title: 'Tentang Kami',
-                      onTap: controller.navigateToAboutUs,
-                      color: const Color(0xFF00BCD4),
-                    ),
-                    const SizedBox(height: 10),
-                    _buildMenuItem(
-                      icon: Icons.help_outline_rounded,
-                      title: 'Panduan',
-                      onTap: () => Get.toNamed(AppRoutes.panduan),
-                      color: const Color(0xFF8E24AA),
-                    ),
-                    const SizedBox(height: 10),
-                    const Text(
-                      'Fitur Siswa',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textBlack,
-                        fontFamily: 'Roboto',
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    _buildMenuItem(
-                      icon: Icons.quiz_rounded,
-                      title: 'Kuis',
-                      onTap: () {
-                        Get.toNamed(
-                          AppRoutes.profileQuiz,
-                        );
-                      },
-                      color: const Color(0xFF4CAF50),
-                    ),
-                    const SizedBox(height: 10),
-                    _buildMenuItem(
-                      icon: Icons.note_rounded,
-                      title: 'Catatan',
-                      onTap: () {
-                        Get.toNamed(
-                          AppRoutes.profileNotes,
-                        );
-                      },
-                      color: const Color(0xFF3F51B5),
-                    ),
-                    const SizedBox(height: 10),
-                    _buildMenuItem(
-                      icon: Icons.record_voice_over_rounded,
-                      title: 'Pengaturan Suara',
-                      onTap: () {
-                        Get.toNamed(
-                          AppRoutes.profileVoiceSettings,
-                        );
-                      },
-                      color: const Color(0xFFFF7043),
-                    ),
-                    const SizedBox(height: 10),
-                    _buildMenuItem(
-                      icon: Icons.logout_rounded,
-                      title: 'Keluar',
-                      onTap: () async {
-                        if (await _confirmLogout(context)) {
-                          controller.logout();
-                        }
-                      },
-                      color: Colors.red,
-                      isLogout: true,
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-                ),
-              ),
               ],
             ),
           ),

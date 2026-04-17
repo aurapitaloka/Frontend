@@ -32,7 +32,10 @@ class ProfileController extends GetxController {
       debugPrint('[Profile] fetchProfile response -> $response');
       final userCandidate = response['user'] ?? response;
       if (userCandidate is Map<String, dynamic>) {
-        userName.value = userCandidate['nama']?.toString() ?? userCandidate['name']?.toString() ?? userName.value;
+        userName.value =
+            userCandidate['nama']?.toString() ??
+            userCandidate['name']?.toString() ??
+            userName.value;
         userEmail.value = userCandidate['email']?.toString() ?? userEmail.value;
         final foto = userCandidate['foto_profil']?.toString();
         final resolved = ApiConfig.resolveStorageUrl(foto);
@@ -56,10 +59,6 @@ class ProfileController extends GetxController {
 
   void navigateToProfileSettings() {
     Get.toNamed(AppRoutes.editProfile);
-  }
-
-  void navigateToNotifications() {
-    Get.toNamed(AppRoutes.profileNotifications);
   }
 
   void navigateToAboutUs() {

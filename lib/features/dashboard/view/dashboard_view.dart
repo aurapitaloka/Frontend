@@ -58,7 +58,6 @@ class DashboardView extends GetView<DashboardController> {
         'profile': () => controller.changeIndex(2),
         'buka profil': () => controller.changeIndex(2),
         'buka profile': () => controller.changeIndex(2),
-        'notifikasi': () => Get.toNamed(AppRoutes.profileNotifications),
         'scroll': () => scrollHomeBy(320),
         'scroll bawah': () => scrollHomeBy(320),
         'scroll turun': () => scrollHomeBy(320),
@@ -142,153 +141,144 @@ class DashboardView extends GetView<DashboardController> {
         children: [
           // Top Header Section dengan gradient
           // Top Header Section - Professional & Clean Design
-Container(
-  decoration: BoxDecoration(
-    color: Colors.white,
-    boxShadow: [
-      BoxShadow(
-        color: Colors.black.withOpacity(0.04),
-        blurRadius: 10,
-        offset: const Offset(0, 2),
-      ),
-    ],
-  ),
-  child: SafeArea(
-    bottom: false,
-    child: Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-      child: Column(
-        children: [
-          // Top Bar: Logo & Notification
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Logo Section
-              Row(
-                children: [
-                  Container(
-                    width: 46,
-                    height: 46,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          AppColors.yellow,
-                          AppColors.yellow.withOpacity(0.8),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.yellow.withOpacity(0.25),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                child: Column(
+                  children: [
+                    // Top Bar: Logo & Voice
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Logo Section
+                        Row(
+                          children: [
+                            Container(
+                              width: 46,
+                              height: 46,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    AppColors.yellow,
+                                    AppColors.yellow.withOpacity(0.8),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(14),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.yellow.withOpacity(0.25),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.pan_tool_rounded,
+                                color: AppColors.orange,
+                                size: 26,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'AKSES',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.orange,
+                                    fontFamily: 'Roboto',
+                                    letterSpacing: 0.5,
+                                    height: 1,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Belajar Digital',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.grey[600],
+                                    fontFamily: 'Roboto',
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
+
+                        const VoiceCommandButton(size: 38),
                       ],
                     ),
-                    child: const Icon(
-                      Icons.pan_tool_rounded,
-                      color: AppColors.orange,
-                      size: 26,
+
+                    const SizedBox(height: 20),
+
+                    // Search Bar with Modern Design
+                    Container(
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: Colors.grey[200]!, width: 1),
+                      ),
+                      child: TextField(
+                        controller: controller.searchController,
+                        onSubmitted: (value) {
+                          controller.searchYoutubeVideos(value);
+                        },
+                        decoration: InputDecoration(
+                          hintText: 'Cari mata pelajaran, buku, atau materi...',
+                          hintStyle: TextStyle(
+                            color: Colors.grey[500],
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                          ),
+                          prefixIcon: Icon(
+                            Icons.search_rounded,
+                            color: AppColors.orange,
+                            size: 24,
+                          ),
+                          suffixIcon: Container(
+                            margin: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: AppColors.orange.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(
+                              Icons.tune_rounded,
+                              color: AppColors.orange,
+                              size: 20,
+                            ),
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 15,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'AKSES',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.orange,
-                          fontFamily: 'Roboto',
-                          letterSpacing: 0.5,
-                          height: 1,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Belajar Digital',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey[600],
-                          fontFamily: 'Roboto',
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              
-              Row(
-                children: [
-                  const VoiceCommandButton(size: 38),
-                  const SizedBox(width: 10),
-                  _buildNotificationButton(),
-                ],
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 20),
-
-          // Search Bar with Modern Design
-          Container(
-            height: 50,
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: Colors.grey[200]!,
-                width: 1,
-              ),
-            ),
-            child: TextField(
-              controller: controller.searchController,
-              onSubmitted: (value) {
-                controller.searchYoutubeVideos(value);
-              },
-              decoration: InputDecoration(
-                hintText: 'Cari mata pelajaran, buku, atau materi...',
-                hintStyle: TextStyle(
-                  color: Colors.grey[500],
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                ),
-                prefixIcon: Icon(
-                  Icons.search_rounded,
-                  color: AppColors.orange,
-                  size: 24,
-                ),
-                suffixIcon: Container(
-                  margin: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: AppColors.orange.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    Icons.tune_rounded,
-                    color: AppColors.orange,
-                    size: 20,
-                  ),
-                ),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 15,
+                  ],
                 ),
               ),
             ),
           ),
-        ],
-      ),
-    ),
-  ),
-),
 
           // Scrollable Content
           Expanded(
@@ -346,7 +336,8 @@ Container(
                           ],
                         ),
                         const SizedBox(height: 16),
-                        Obx(() => Text(
+                        Obx(
+                          () => Text(
                             controller.lastSessionMateriTitle.value.isNotEmpty
                                 ? controller.lastSessionMateriTitle.value
                                 : 'Pendidikan Agama Islam',
@@ -359,19 +350,22 @@ Container(
                               fontFamily: 'Roboto',
                               height: 1.2,
                             ),
-                          )),
-                          const SizedBox(height: 6),
-                        Obx(() => Text(
-                              controller.selectedLevelName.value.isNotEmpty
-                                  ? controller.selectedLevelName.value
-                                  : 'Kelas',
-                              style: TextStyle(
-                                fontSize: 15,
-                                color: Colors.black.withOpacity(0.6),
-                                fontFamily: 'Roboto',
-                                fontWeight: FontWeight.w500,
-                              ),
-                            )),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Obx(
+                          () => Text(
+                            controller.selectedLevelName.value.isNotEmpty
+                                ? controller.selectedLevelName.value
+                                : 'Kelas',
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: Colors.black.withOpacity(0.6),
+                              fontFamily: 'Roboto',
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
                         const SizedBox(height: 20),
                         Row(
                           children: [
@@ -379,14 +373,16 @@ Container(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Obx(() => Text(
-                                        '${controller.lastSessionProgress.value}% selesai',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.black.withOpacity(0.7),
-                                        ),
-                                      )),
+                                  Obx(
+                                    () => Text(
+                                      '${controller.lastSessionProgress.value}% selesai',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.black.withOpacity(0.7),
+                                      ),
+                                    ),
+                                  ),
                                   const SizedBox(height: 8),
                                   Container(
                                     height: 8,
@@ -395,14 +391,22 @@ Container(
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: Obx(() {
-                                      final factor = (controller.lastSessionProgress.value / 100).clamp(0.0, 1.0).toDouble();
+                                      final factor =
+                                          (controller
+                                                      .lastSessionProgress
+                                                      .value /
+                                                  100)
+                                              .clamp(0.0, 1.0)
+                                              .toDouble();
                                       return FractionallySizedBox(
                                         alignment: Alignment.centerLeft,
                                         widthFactor: factor,
                                         child: Container(
                                           decoration: BoxDecoration(
                                             color: AppColors.orange,
-                                            borderRadius: BorderRadius.circular(4),
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
                                           ),
                                         ),
                                       );
@@ -426,29 +430,51 @@ Container(
                               ),
                               child: ElevatedButton.icon(
                                 onPressed: () {
-                                  final id = controller.lastSessionMateriId.value;
+                                  final id =
+                                      controller.lastSessionMateriId.value;
                                   if (id == 0) return;
                                   final item = controller.materi.firstWhere(
-                                    (m) => (m['id'] is int ? m['id'] == id : int.tryParse(m['id']?.toString() ?? '') == id),
+                                    (m) => (m['id'] is int
+                                        ? m['id'] == id
+                                        : int.tryParse(
+                                                m['id']?.toString() ?? '',
+                                              ) ==
+                                              id),
                                     orElse: () => {},
                                   );
                                   if (item.isEmpty) return;
-                                  final title = item['judul']?.toString() ?? controller.lastSessionMateriTitle.value;
-                                  final levelName = (item['level'] as Map?)?['nama']?.toString() ?? controller.selectedLevelName.value;
-                                  final filePath = item['file_path']?.toString();
-                                  final pdfUrl = controller.resolveFileUrl(filePath);
-                                  final coverPath = item['cover_path']?.toString();
-                                  final coverUrl = controller.resolveFileUrl(coverPath);
-                                  Get.toNamed(AppRoutes.material, arguments: {
-                                    'title': title,
-                                    'subtitle': levelName,
-                                    'category': 'Mata Pelajaran',
-                                    'body': item['konten_teks']?.toString() ?? '',
-                                    'coverImage': coverUrl ??
-                                        'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=1200&q=80',
-                                    'pdfUrl': pdfUrl,
-                                    'materi_id': id,
-                                  });
+                                  final title =
+                                      item['judul']?.toString() ??
+                                      controller.lastSessionMateriTitle.value;
+                                  final levelName =
+                                      (item['level'] as Map?)?['nama']
+                                          ?.toString() ??
+                                      controller.selectedLevelName.value;
+                                  final filePath = item['file_path']
+                                      ?.toString();
+                                  final pdfUrl = controller.resolveFileUrl(
+                                    filePath,
+                                  );
+                                  final coverPath = item['cover_path']
+                                      ?.toString();
+                                  final coverUrl = controller.resolveFileUrl(
+                                    coverPath,
+                                  );
+                                  Get.toNamed(
+                                    AppRoutes.material,
+                                    arguments: {
+                                      'title': title,
+                                      'subtitle': levelName,
+                                      'category': 'Mata Pelajaran',
+                                      'body':
+                                          item['konten_teks']?.toString() ?? '',
+                                      'coverImage':
+                                          coverUrl ??
+                                          'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=1200&q=80',
+                                      'pdfUrl': pdfUrl,
+                                      'materi_id': id,
+                                    },
+                                  );
                                 },
                                 icon: const Icon(
                                   Icons.play_arrow_rounded,
@@ -507,6 +533,7 @@ Container(
                       if (raw is String) return int.tryParse(raw);
                       return null;
                     }
+
                     final levelItems = <DropdownMenuItem<int>>[
                       const DropdownMenuItem<int>(
                         value: -1,
@@ -533,9 +560,7 @@ Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: Colors.grey.shade300,
-                        ),
+                        border: Border.all(color: Colors.grey.shade300),
                       ),
                       child: Row(
                         children: [
@@ -543,16 +568,18 @@ Container(
                           Expanded(
                             child: Container(
                               decoration: BoxDecoration(
-                                color:
-                                    isKelas ? AppColors.orange : Colors.white,
+                                color: isKelas
+                                    ? AppColors.orange
+                                    : Colors.white,
                                 borderRadius: const BorderRadius.only(
                                   topLeft: Radius.circular(14),
                                   bottomLeft: Radius.circular(14),
                                 ),
                               ),
                               alignment: Alignment.center,
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
                               child: DropdownButtonHideUnderline(
                                 child: DropdownButton<int>(
                                   value: hasLevelItems
@@ -563,8 +590,8 @@ Container(
                                     isLoadingLevels
                                         ? 'Memuat kelas...'
                                         : (hasLevelItems
-                                            ? 'Pilih Kelas'
-                                            : 'Kelas belum tersedia'),
+                                              ? 'Pilih Kelas'
+                                              : 'Kelas belum tersedia'),
                                     style: TextStyle(
                                       color: isKelas
                                           ? Colors.white
@@ -603,12 +630,13 @@ Container(
                                       ? (value) {
                                           if (value == null) return;
 
-                                          final selected =
-                                              controller.levels.firstWhere(
-                                            (l) =>
-                                                parseLevelId(l['id']) == value,
-                                            orElse: () => {},
-                                          );
+                                          final selected = controller.levels
+                                              .firstWhere(
+                                                (l) =>
+                                                    parseLevelId(l['id']) ==
+                                                    value,
+                                                orElse: () => {},
+                                              );
 
                                           controller.changeTab('Kelas');
                                           controller.changeLevel(
@@ -623,10 +651,7 @@ Container(
                             ),
                           ),
 
-                          Container(
-                            width: 1,
-                            color: Colors.grey.shade300,
-                          ),
+                          Container(width: 1, color: Colors.grey.shade300),
 
                           // ===== FIKSI =====
                           Expanded(
@@ -665,19 +690,14 @@ Container(
                     );
                   }),
 
-
-
                   const SizedBox(height: 16),
-
-                  
 
                   const SizedBox(height: 8),
 
                   // Dropdown for class selection
-                 
 
                   // Subject/Book List
-                 Obx(() {
+                  Obx(() {
                     // 1. TAMPILAN UNTUK TAB YOUTUBE (PENCARIAN SUARA AI)
                     if (controller.activeTab.value == 'YouTube') {
                       if (controller.isLoadingYoutube.value) {
@@ -686,10 +706,17 @@ Container(
                           child: Center(
                             child: Column(
                               children: [
-                                CircularProgressIndicator(color: AppColors.orange),
+                                CircularProgressIndicator(
+                                  color: AppColors.orange,
+                                ),
                                 SizedBox(height: 16),
-                                Text("AI sedang mencarikan video yang tepat...", 
-                                  style: TextStyle(fontFamily: 'Roboto', color: Colors.grey)),
+                                Text(
+                                  "AI sedang mencarikan video yang tepat...",
+                                  style: TextStyle(
+                                    fontFamily: 'Roboto',
+                                    color: Colors.grey,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -711,9 +738,9 @@ Container(
                             child: Text(
                               'Hasil Video untuk: "${controller.youtubeSearchQuery.value}"',
                               style: const TextStyle(
-                                fontSize: 16, 
-                                fontWeight: FontWeight.bold, 
-                                color: AppColors.orange
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.orange,
                               ),
                             ),
                           ),
@@ -725,44 +752,74 @@ Container(
                     }
 
                     // 2. CEK LOADING UNTUK KELAS & FIKSI
-                    if (controller.activeTab.value == 'Fiksi' && controller.isLoadingFiksi.value) {
+                    if (controller.activeTab.value == 'Fiksi' &&
+                        controller.isLoadingFiksi.value) {
                       return const Padding(
                         padding: EdgeInsets.symmetric(vertical: 24),
                         child: Center(child: CircularProgressIndicator()),
                       );
                     }
-                    if (controller.activeTab.value == 'Fiksi' && controller.fiksiErrorMessage.value.isNotEmpty) {
+                    if (controller.activeTab.value == 'Fiksi' &&
+                        controller.fiksiErrorMessage.value.isNotEmpty) {
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Text(controller.fiksiErrorMessage.value, style: TextStyle(color: Colors.red[400], fontFamily: 'Roboto')),
+                        child: Text(
+                          controller.fiksiErrorMessage.value,
+                          style: TextStyle(
+                            color: Colors.red[400],
+                            fontFamily: 'Roboto',
+                          ),
+                        ),
                       );
                     }
-                    if (controller.activeTab.value == 'Kelas' && controller.isLoadingMateri.value) {
+                    if (controller.activeTab.value == 'Kelas' &&
+                        controller.isLoadingMateri.value) {
                       return const Padding(
                         padding: EdgeInsets.symmetric(vertical: 24),
                         child: Center(child: CircularProgressIndicator()),
                       );
                     }
-                    if (controller.errorMessage.value.isNotEmpty && controller.activeTab.value == 'Kelas') {
+                    if (controller.errorMessage.value.isNotEmpty &&
+                        controller.activeTab.value == 'Kelas') {
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: Text(controller.errorMessage.value, style: TextStyle(color: Colors.red[400], fontFamily: 'Roboto')),
+                        child: Text(
+                          controller.errorMessage.value,
+                          style: TextStyle(
+                            color: Colors.red[400],
+                            fontFamily: 'Roboto',
+                          ),
+                        ),
                       );
                     }
 
                     // 3. TAMPILAN LIST MATERI (KELAS) ATAU BUKU (FIKSI)
                     final items = controller.currentItems;
-                    
-                    if (controller.activeTab.value == 'Kelas' && items.isEmpty) {
+
+                    if (controller.activeTab.value == 'Kelas' &&
+                        items.isEmpty) {
                       return const Padding(
                         padding: EdgeInsets.symmetric(vertical: 12),
-                        child: Text('Materi belum tersedia.', style: TextStyle(color: AppColors.textBlack, fontFamily: 'Roboto')),
+                        child: Text(
+                          'Materi belum tersedia.',
+                          style: TextStyle(
+                            color: AppColors.textBlack,
+                            fontFamily: 'Roboto',
+                          ),
+                        ),
                       );
                     }
-                    if (controller.activeTab.value == 'Fiksi' && items.isEmpty) {
+                    if (controller.activeTab.value == 'Fiksi' &&
+                        items.isEmpty) {
                       return const Padding(
                         padding: EdgeInsets.symmetric(vertical: 12),
-                        child: Text('Buku fiksi belum tersedia.', style: TextStyle(color: AppColors.textBlack, fontFamily: 'Roboto')),
+                        child: Text(
+                          'Buku fiksi belum tersedia.',
+                          style: TextStyle(
+                            color: AppColors.textBlack,
+                            fontFamily: 'Roboto',
+                          ),
+                        ),
                       );
                     }
 
@@ -770,10 +827,19 @@ Container(
                       children: items.map((item) {
                         if (controller.activeTab.value == 'Kelas') {
                           final title = item['judul']?.toString() ?? '';
-                          final mataPelajaran = (item['mata_pelajaran'] as Map?)?['nama']?.toString() ?? 'Materi';
-                          final levelName = (item['level'] as Map?)?['nama']?.toString() ?? controller.selectedLevelName.value;
-                          final subtitle = levelName.isNotEmpty ? '$mataPelajaran | $levelName' : mataPelajaran;
-                          final coverPath = (item['cover_path'] ?? item['cover_image'])?.toString();
+                          final mataPelajaran =
+                              (item['mata_pelajaran'] as Map?)?['nama']
+                                  ?.toString() ??
+                              'Materi';
+                          final levelName =
+                              (item['level'] as Map?)?['nama']?.toString() ??
+                              controller.selectedLevelName.value;
+                          final subtitle = levelName.isNotEmpty
+                              ? '$mataPelajaran | $levelName'
+                              : mataPelajaran;
+                          final coverPath =
+                              (item['cover_path'] ?? item['cover_image'])
+                                  ?.toString();
                           final coverUrl = controller.resolveFileUrl(coverPath);
                           return _buildSubjectItem(
                             title: title,
@@ -785,7 +851,9 @@ Container(
                           final title = item['judul_buku']?.toString() ?? '';
                           final author = item['penulis']?.toString() ?? '';
                           final kategori = item['kategori']?.toString() ?? '';
-                          final coverPath = (item['cover_path'] ?? item['cover_image'])?.toString();
+                          final coverPath =
+                              (item['cover_path'] ?? item['cover_image'])
+                                  ?.toString();
                           final coverUrl = controller.resolveFileUrl(coverPath);
                           return _buildFictionBookItem(
                             title: title,
@@ -880,7 +948,8 @@ Container(
             'subtitle': semester,
             'category': 'Mata Pelajaran',
             'body': kontenTeks?.isNotEmpty == true ? kontenTeks : _detailBody,
-            'coverImage': coverUrl ??
+            'coverImage':
+                coverUrl ??
                 'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=1200&q=80',
             'pdfUrl': pdfUrl,
             'materi_id': materi['id'],
@@ -1042,14 +1111,15 @@ Container(
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      const Icon(Icons.smart_display_rounded, color: AppColors.orange, size: 16),
+                      const Icon(
+                        Icons.smart_display_rounded,
+                        color: AppColors.orange,
+                        size: 16,
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         video['channelTitle'],
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -1085,7 +1155,8 @@ Container(
                 : 'Fiksi | $author',
             'category': 'Buku Fiksi',
             'body': description?.isNotEmpty == true ? description : _detailBody,
-            'coverImage': coverUrl ??
+            'coverImage':
+                coverUrl ??
                 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=1200&q=80',
             'pdfUrl': pdfUrl,
             'fiksi_id': fiksi['id'],
@@ -1282,53 +1353,6 @@ Container(
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildNotificationButton() {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: () => Get.toNamed(AppRoutes.profileNotifications),
-        child: Container(
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.08),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              const Icon(
-                Icons.notifications_none_rounded,
-                color: AppColors.orange,
-                size: 22,
-              ),
-              Positioned(
-                top: 9,
-                right: 10,
-                child: Container(
-                  width: 8,
-                  height: 6,
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

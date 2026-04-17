@@ -7,7 +7,6 @@ class AppRoutes {
   static const String editProfile = '/edit-profile';
   static const String material = '/material';
   static const String materialDetail = '/material-detail';
-  static const String profileNotifications = '/profile-notifications';
   static const String profileAbout = '/profile-about';
   static const String profileQuiz = '/profile-quiz';
   static const String profileQuizDetail = '/profile-quiz-detail';
