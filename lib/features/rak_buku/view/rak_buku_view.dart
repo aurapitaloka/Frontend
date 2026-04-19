@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controller/rak_buku_controller.dart';
 import '../../../core/utils/app_colors.dart';
@@ -99,7 +98,7 @@ class RakBukuView extends GetView<RakBukuController> {
                     ),
                     itemBuilder: (context, index) {
                       final entry = controller.items[index];
-                      final materi = entry['materi'] as Map<String, dynamic>? ?? {};
+                      final materi = controller.materiFromEntry(entry);
                       final title = materi['judul']?.toString() ?? 'Materi';
                       final subtitle = '${materi['level']?['nama'] ?? ''}';
                       final coverPath = materi['cover_path']?.toString();

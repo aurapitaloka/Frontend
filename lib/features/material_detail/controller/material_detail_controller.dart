@@ -6,6 +6,7 @@ import '../../../routes/app_routes.dart';
 import '../../../core/services/rak_buku_service.dart';
 import '../../../core/services/sesi_baca_service.dart';
 import '../../../core/controllers/voice_command_controller.dart';
+import '../../rak_buku/controller/rak_buku_controller.dart';
 
 class MaterialDetailController extends GetxController {
   // ===============================
@@ -30,6 +31,7 @@ class MaterialDetailController extends GetxController {
   final RxBool gazeEnabled = false.obs;
   final RxBool voiceEnabled = false.obs;
   final RxBool showQuizCta = false.obs;
+  final RxBool isLastPageLoaded = false.obs;
   final VoiceCommandController voiceCommandController =
       Get.find<VoiceCommandController>();
 
@@ -41,6 +43,7 @@ class MaterialDetailController extends GetxController {
 
   /// halaman terakhir
   final RxInt lastSessionPage = 1.obs;
+  int readerStartPage = 1;
   int _totalPages = 1;
 
   static const String _fallbackBody =
@@ -55,8 +58,8 @@ class MaterialDetailController extends GetxController {
 
     final args = Get.arguments as Map<String, dynamic>? ?? {};
 
-    materiId = args['materi_id'];
-    fiksiId = args['fiksi_id'];
+    materiId = _parseId(args['materi_id']);
+    fiksiId = _parseId(args['fiksi_id']);
     title = args['title'] ?? 'Judul Materi';
     subtitle = args['subtitle'] ?? '';
     category = args['category'] ?? '';
@@ -89,6 +92,8 @@ class MaterialDetailController extends GetxController {
       if (materiId != null) {
         await _loadBackendLastPage();
       }
+      readerStartPage = lastSessionPage.value;
+      isLastPageLoaded.value = true;
     });
   }
 
@@ -199,6 +204,8 @@ class MaterialDetailController extends GetxController {
       final res = await RakBukuService.status(materiId!);
       if (res.containsKey('in_rak')) {
         inRak.value = res['in_rak'] == true;
+      } else if (res['data'] is Map && res['data']['in_rak'] != null) {
+        inRak.value = res['data']['in_rak'] == true;
       }
     } catch (_) {}
   }
@@ -211,8 +218,19 @@ class MaterialDetailController extends GetxController {
       final res = next
           ? await RakBukuService.addToRak(materiId!)
           : await RakBukuService.removeFromRak(materiId!);
-      if (res.containsKey('error')) {
+      final statusCode = int.tryParse(res['_status_code']?.toString() ?? '');
+      if (res.containsKey('error') ||
+          res.containsKey('errors') ||
+          (statusCode != null && statusCode >= 400)) {
         inRak.value = !next;
+        Get.snackbar(
+          'Rak Buku gagal diperbarui',
+          res['message']?.toString() ?? res['error']?.toString() ?? 'Coba lagi.',
+        );
+        return;
+      }
+      if (Get.isRegistered<RakBukuController>()) {
+        await Get.find<RakBukuController>().fetchItems();
       }
     } catch (_) {
       inRak.value = !next;
@@ -224,8 +242,8 @@ class MaterialDetailController extends GetxController {
     try {
       final res = await SesiBacaService.getLast(materiId!);
       if (res.containsKey('halaman_terakhir')) {
-        final last = res['halaman_terakhir'] as int?;
-        if (last != null && last > 0) {
+        final last = int.tryParse(res['halaman_terakhir']?.toString() ?? '');
+        if (last != null && last > lastSessionPage.value) {
           lastSessionPage.value = last;
           await saveLastPage(last);
         }
@@ -273,5 +291,12 @@ class MaterialDetailController extends GetxController {
       AppRoutes.materiQuizIntro,
       arguments: {'materi_id': materiId, 'materi_title': title},
     );
+  }
+
+  bool get isFiksi => fiksiId != null;
+
+  int? _parseId(dynamic value) {
+    if (value is int) return value;
+    return int.tryParse(value?.toString() ?? '');
   }
 }

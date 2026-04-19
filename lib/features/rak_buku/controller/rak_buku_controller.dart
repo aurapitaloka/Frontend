@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/utils/api_config.dart';
 import '../../../routes/app_routes.dart';
@@ -22,11 +21,8 @@ class RakBukuController extends GetxController {
     error.value = '';
     try {
       final res = await RakBukuService.list(page: page, perPage: perPage);
-      if (res.containsKey('data') && res['data'] is List) {
-        final list = (res['data'] as List).cast<Map<String, dynamic>>();
-        items.assignAll(list);
-      } else if (res.containsKey('data') && res['data'] is Map && res['data']['data'] is List) {
-        final list = (res['data']['data'] as List).cast<Map<String, dynamic>>();
+      final list = _extractList(res);
+      if (list != null) {
         items.assignAll(list);
       } else if (res.containsKey('error')) {
         error.value = res['error'].toString();
@@ -38,6 +34,24 @@ class RakBukuController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  Map<String, dynamic> materiFromEntry(Map<String, dynamic> entry) {
+    final direct = entry['materi'];
+    if (direct is Map) return Map<String, dynamic>.from(direct);
+
+    final data = entry['data'];
+    if (data is Map && data['materi'] is Map) {
+      return Map<String, dynamic>.from(data['materi'] as Map);
+    }
+
+    if (entry.containsKey('judul') ||
+        entry.containsKey('cover_path') ||
+        entry.containsKey('file_path')) {
+      return entry;
+    }
+
+    return <String, dynamic>{};
   }
 
   void openMateriFromVoice(String spoken) {
@@ -56,7 +70,7 @@ class RakBukuController extends GetxController {
     Map<String, dynamic>? found;
 
     for (final entry in items) {
-      final materi = entry['materi'] as Map<String, dynamic>? ?? {};
+      final materi = materiFromEntry(entry);
       final title = materi['judul']?.toString() ?? '';
       if (title.isEmpty) continue;
       final normalizedTitle = _normalize(title);
@@ -138,6 +152,23 @@ class RakBukuController extends GetxController {
     final lowered = text.toLowerCase();
     final cleaned = lowered.replaceAll(RegExp(r'[^a-z0-9 ]'), ' ');
     return cleaned.replaceAll(RegExp(r'\s+'), ' ').trim();
+  }
+
+  List<Map<String, dynamic>>? _extractList(Map<String, dynamic> res) {
+    final data = res['data'];
+    if (data is List) {
+      return data
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList();
+    }
+    if (data is Map && data['data'] is List) {
+      return (data['data'] as List)
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList();
+    }
+    return null;
   }
 
   @override

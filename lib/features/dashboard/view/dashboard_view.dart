@@ -290,227 +290,9 @@ class DashboardView extends GetView<DashboardController> {
                 children: [
                   const SizedBox(height: 20),
 
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(14),
+                  Obx(() => _buildContinueReadingCard()),
 
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [AppColors.yellow, Color(0xFFFFF59D)],
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.yellow.withOpacity(0.3),
-                          blurRadius: 16,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.9),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: const Text(
-                                '?? Lanjutkan Belajar',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.orange,
-                                  fontFamily: 'Roboto',
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        Obx(
-                          () => Text(
-                            controller.lastSessionMateriTitle.value.isNotEmpty
-                                ? controller.lastSessionMateriTitle.value
-                                : 'Pendidikan Agama Islam',
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.orange,
-                              fontFamily: 'Roboto',
-                              height: 1.2,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Obx(
-                          () => Text(
-                            controller.selectedLevelName.value.isNotEmpty
-                                ? controller.selectedLevelName.value
-                                : 'Kelas',
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: Colors.black.withOpacity(0.6),
-                              fontFamily: 'Roboto',
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Obx(
-                                    () => Text(
-                                      '${controller.lastSessionProgress.value}% selesai',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.black.withOpacity(0.7),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Container(
-                                    height: 8,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.4),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Obx(() {
-                                      final factor =
-                                          (controller
-                                                      .lastSessionProgress
-                                                      .value /
-                                                  100)
-                                              .clamp(0.0, 1.0)
-                                              .toDouble();
-                                      return FractionallySizedBox(
-                                        alignment: Alignment.centerLeft,
-                                        widthFactor: factor,
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            color: AppColors.orange,
-                                            borderRadius: BorderRadius.circular(
-                                              4,
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    }),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Container(
-                              decoration: BoxDecoration(
-                                color: AppColors.orange,
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.orange.withOpacity(0.3),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: ElevatedButton.icon(
-                                onPressed: () {
-                                  final id =
-                                      controller.lastSessionMateriId.value;
-                                  if (id == 0) return;
-                                  final item = controller.materi.firstWhere(
-                                    (m) => (m['id'] is int
-                                        ? m['id'] == id
-                                        : int.tryParse(
-                                                m['id']?.toString() ?? '',
-                                              ) ==
-                                              id),
-                                    orElse: () => {},
-                                  );
-                                  if (item.isEmpty) return;
-                                  final title =
-                                      item['judul']?.toString() ??
-                                      controller.lastSessionMateriTitle.value;
-                                  final levelName =
-                                      (item['level'] as Map?)?['nama']
-                                          ?.toString() ??
-                                      controller.selectedLevelName.value;
-                                  final filePath = item['file_path']
-                                      ?.toString();
-                                  final pdfUrl = controller.resolveFileUrl(
-                                    filePath,
-                                  );
-                                  final coverPath = item['cover_path']
-                                      ?.toString();
-                                  final coverUrl = controller.resolveFileUrl(
-                                    coverPath,
-                                  );
-                                  Get.toNamed(
-                                    AppRoutes.material,
-                                    arguments: {
-                                      'title': title,
-                                      'subtitle': levelName,
-                                      'category': 'Mata Pelajaran',
-                                      'body':
-                                          item['konten_teks']?.toString() ?? '',
-                                      'coverImage':
-                                          coverUrl ??
-                                          'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=1200&q=80',
-                                      'pdfUrl': pdfUrl,
-                                      'materi_id': id,
-                                    },
-                                  );
-                                },
-                                icon: const Icon(
-                                  Icons.play_arrow_rounded,
-                                  color: Colors.white,
-                                  size: 22,
-                                ),
-                                label: const Text(
-                                  'Lanjut',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                    fontFamily: 'Roboto',
-                                  ),
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.transparent,
-                                  foregroundColor: Colors.white,
-                                  elevation: 0,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 8,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 28),
 
                   // Start Reading Section
                   const Text(
@@ -848,8 +630,15 @@ class DashboardView extends GetView<DashboardController> {
                             coverUrl: coverUrl,
                           );
                         } else {
-                          final title = item['judul_buku']?.toString() ?? '';
-                          final author = item['penulis']?.toString() ?? '';
+                          final title =
+                              (item['judul_buku'] ??
+                                      item['judul'] ??
+                                      item['nama_buku'])
+                                  ?.toString() ??
+                              '';
+                          final author =
+                              (item['penulis'] ?? item['author'] ?? 'Penulis')
+                                  .toString();
                           final kategori = item['kategori']?.toString() ?? '';
                           final coverPath =
                               (item['cover_path'] ?? item['cover_image'])
@@ -877,55 +666,264 @@ class DashboardView extends GetView<DashboardController> {
     );
   }
 
-  Widget _buildCategoryTab({
-    required String rawLabel,
-    required String labelText,
-    required bool isSelected,
-  }) {
-    return GestureDetector(
-      onTap: () => controller.changeTab(rawLabel),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.orange : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? AppColors.orange : Colors.grey.shade300,
-            width: isSelected ? 0 : 1.5,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: AppColors.orange.withOpacity(0.3),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : [],
+  Widget _buildContinueReadingCard() {
+    final hasSession = controller.hasLastSession.value;
+    final title = hasSession && controller.lastSessionMateriTitle.value.isNotEmpty
+        ? controller.lastSessionMateriTitle.value
+        : 'Pilih materi bacaan';
+    final progress = hasSession
+        ? controller.lastSessionProgress.value.clamp(0, 100)
+        : 0;
+    final progressFactor = (progress / 100).clamp(0.0, 1.0).toDouble();
+    final level = controller.selectedLevelName.value.isNotEmpty
+        ? controller.selectedLevelName.value
+        : 'Semua';
+
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(minHeight: 134),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFFFF98A), Color(0xFFFFEA3D), Color(0xFFFFD92E)],
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isSelected && rawLabel == 'Kelas')
-              const Icon(
-                Icons.keyboard_arrow_down,
-                color: Colors.white,
-                size: 20,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFFD92E).withOpacity(0.22),
+            blurRadius: 20,
+            offset: const Offset(0, 9),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.48),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.42),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  hasSession
+                      ? 'Yuk, selesaikan bacaanmu'
+                      : 'Yuk, mulai bacaanmu',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    height: 1,
+                    color: Color(0xFF7B5A00),
+                    fontFamily: 'Roboto',
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
               ),
-            if (isSelected && rawLabel == 'Kelas') const SizedBox(width: 4),
-            Text(
-              labelText,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : AppColors.textBlack,
-                fontFamily: 'Roboto',
+              const Spacer(),
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.36),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.auto_stories_rounded,
+                  size: 17,
+                  color: Color(0xFFC14900),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        height: 1.12,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFFB93D00),
+                        fontFamily: 'Roboto',
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.school_rounded,
+                          size: 15,
+                          color: Color(0xFF755300),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            hasSession ? level : 'Belum ada riwayat terakhir',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13,
+                              height: 1.15,
+                              color: const Color(0xFF514000).withOpacity(0.8),
+                              fontFamily: 'Roboto',
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              SizedBox(
+                height: 42,
+                child: ElevatedButton(
+                  onPressed: hasSession
+                      ? _openLastSessionMateri
+                      : _scrollToReadingList,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white.withOpacity(0.86),
+                    foregroundColor: const Color(0xFFC14900),
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        hasSession
+                            ? Icons.play_arrow_rounded
+                            : Icons.arrow_downward_rounded,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        hasSession ? 'Lanjut' : 'Pilih',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                          fontFamily: 'Roboto',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 15),
+          Row(
+            children: [
+              Text(
+                hasSession ? 'Progress membaca' : 'Belum dimulai',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: const Color(0xFF514000).withOpacity(0.78),
+                  fontFamily: 'Roboto',
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '$progress%',
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: Color(0xFF9B3A00),
+                  fontFamily: 'Roboto',
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 7),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              height: 9,
+              width: double.infinity,
+              color: const Color(0xFFF5C400).withOpacity(0.42),
+              child: FractionallySizedBox(
+                alignment: Alignment.centerLeft,
+                widthFactor: progressFactor,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.96),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
+  }
+
+  void _scrollToReadingList() {
+    if (!controller.homeScrollController.hasClients) return;
+    controller.homeScrollController.animateTo(
+      360,
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  Future<void> _openLastSessionMateri() async {
+    final id = controller.lastSessionMateriId.value;
+    if (id == 0) return;
+    final item = controller.materi.firstWhere(
+      (m) => (m['id'] is int
+          ? m['id'] == id
+          : int.tryParse(m['id']?.toString() ?? '') == id),
+      orElse: () => {},
+    );
+    if (item.isEmpty) return;
+    final title =
+        item['judul']?.toString() ?? controller.lastSessionMateriTitle.value;
+    final levelName =
+        (item['level'] as Map?)?['nama']?.toString() ??
+        controller.selectedLevelName.value;
+    final filePath = item['file_path']?.toString();
+    final pdfUrl = controller.resolveFileUrl(filePath);
+    final coverPath = item['cover_path']?.toString();
+    final coverUrl = controller.resolveFileUrl(coverPath);
+    await Get.toNamed(
+      AppRoutes.material,
+      arguments: {
+        'title': title,
+        'subtitle': levelName,
+        'category': 'Mata Pelajaran',
+        'body': item['konten_teks']?.toString() ?? '',
+        'coverImage':
+            coverUrl ??
+            'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=1200&q=80',
+        'pdfUrl': pdfUrl,
+        'materi_id': id,
+      },
+    );
+    await controller.fetchLatestReadingSession();
   }
 
   Widget _buildSubjectItem({
@@ -935,13 +933,13 @@ class DashboardView extends GetView<DashboardController> {
     String? coverUrl,
   }) {
     return GestureDetector(
-      onTap: () {
+      onTap: () async {
         final kontenTeks = materi['konten_teks']?.toString();
         final filePath = materi['file_path']?.toString();
         final pdfUrl = controller.resolveFileUrl(filePath);
         final coverPath = materi['cover_path']?.toString();
         final coverUrl = controller.resolveFileUrl(coverPath);
-        Get.toNamed(
+        await Get.toNamed(
           AppRoutes.material,
           arguments: {
             'title': title,
@@ -955,6 +953,7 @@ class DashboardView extends GetView<DashboardController> {
             'materi_id': materi['id'],
           },
         );
+        await controller.fetchLatestReadingSession();
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 14),
@@ -1141,13 +1140,26 @@ class DashboardView extends GetView<DashboardController> {
   }) {
     return GestureDetector(
       onTap: () {
-        final description = fiksi['deskripsi']?.toString();
-        final filePath = fiksi['file_path']?.toString();
+        final description =
+            (fiksi['deskripsi'] ??
+                    fiksi['sinopsis'] ??
+                    fiksi['konten_teks'] ??
+                    fiksi['isi'])
+                ?.toString();
+        final filePath =
+            (fiksi['file_path'] ??
+                    fiksi['file'] ??
+                    fiksi['pdf_path'] ??
+                    fiksi['path_file'] ??
+                    fiksi['url'] ??
+                    fiksi['file_url'])
+                ?.toString();
         final pdfUrl = controller.resolveFileUrl(filePath);
-        final coverPath = fiksi['cover_path']?.toString();
+        final coverPath = (fiksi['cover_path'] ?? fiksi['cover_image'])
+            ?.toString();
         final coverUrl = controller.resolveFileUrl(coverPath);
         Get.toNamed(
-          AppRoutes.material,
+          AppRoutes.materialDetail,
           arguments: {
             'title': title,
             'subtitle': category.isNotEmpty
@@ -1165,7 +1177,7 @@ class DashboardView extends GetView<DashboardController> {
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 14),
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -1178,11 +1190,12 @@ class DashboardView extends GetView<DashboardController> {
           ],
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Icon dengan gradient
             Container(
-              width: 60,
-              height: 60,
+              width: 78,
+              height: 96,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
@@ -1200,14 +1213,14 @@ class DashboardView extends GetView<DashboardController> {
                         errorBuilder: (_, __, ___) => const Icon(
                           Icons.auto_stories_rounded,
                           color: AppColors.orange,
-                          size: 30,
+                          size: 34,
                         ),
                       ),
                     )
                   : const Icon(
                       Icons.auto_stories_rounded,
                       color: AppColors.orange,
-                      size: 30,
+                      size: 34,
                     ),
             ),
             const SizedBox(width: 16),
@@ -1219,26 +1232,56 @@ class DashboardView extends GetView<DashboardController> {
                 children: [
                   Text(
                     title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
                       color: AppColors.textBlack,
                       fontFamily: 'Roboto',
-                      height: 1.3,
+                      height: 1.22,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Text(
                     author,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
                       color: Colors.grey[600],
                       fontFamily: 'Roboto',
                     ),
                   ),
+                  if (category.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.orange.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        category,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.orange,
+                          fontFamily: 'Roboto',
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
+            const SizedBox(width: 10),
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(

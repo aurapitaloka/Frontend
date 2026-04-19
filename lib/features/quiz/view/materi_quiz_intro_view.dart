@@ -30,7 +30,8 @@ class MateriQuizIntroView extends GetView<MateriQuizIntroController> {
                 }),
               ),
               Obx(() {
-                final disabled = controller.kuisId == 0 ||
+                final disabled =
+                    controller.kuisId == 0 ||
                     controller.isLoading.value ||
                     controller.error.value.isNotEmpty;
                 return SizedBox(
@@ -42,7 +43,10 @@ class MateriQuizIntroView extends GetView<MateriQuizIntroController> {
                         : () {
                             Get.toNamed(
                               AppRoutes.profileQuizDetail,
-                              arguments: {'kuis_id': controller.kuisId},
+                              arguments: {
+                                'kuis_id': controller.kuisId,
+                                'materi_id': controller.materiId,
+                              },
                             );
                           },
                     style: ElevatedButton.styleFrom(
@@ -54,7 +58,10 @@ class MateriQuizIntroView extends GetView<MateriQuizIntroController> {
                     ),
                     child: const Text(
                       'Lanjut Uji Kemampuan',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 );
@@ -98,7 +105,10 @@ class MateriQuizIntroView extends GetView<MateriQuizIntroController> {
               color: Colors.white,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.emoji_events_rounded, color: AppColors.orange),
+            child: const Icon(
+              Icons.emoji_events_rounded,
+              color: AppColors.orange,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -208,8 +218,11 @@ class MateriQuizIntroView extends GetView<MateriQuizIntroController> {
               ),
               child: Column(
                 children: [
-                  const Icon(Icons.info_outline_rounded,
-                      color: AppColors.orange, size: 36),
+                  const Icon(
+                    Icons.info_outline_rounded,
+                    color: AppColors.orange,
+                    size: 36,
+                  ),
                   const SizedBox(height: 10),
                   Text(
                     message,
@@ -224,10 +237,7 @@ class MateriQuizIntroView extends GetView<MateriQuizIntroController> {
                   Text(
                     'Kamu tetap hebat. Kuis untuk materi ini belum tersedia.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                 ],
               ),

@@ -35,18 +35,15 @@ class ProfileQuizView extends GetView<ProfileQuizController> {
                   child: ListView(
                     padding: const EdgeInsets.all(20),
                     children: [
-                      _heroCard(
-                        totalUmum: controller.kuisUmum.length,
-                        totalMateri: controller.kuisMateri.length,
-                        completed: controller.completedMateriIds.length,
-                      ),
+                      _podiumCard(),
                       const SizedBox(height: 16),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           _sectionTitle('Kuis Umum'),
                           TextButton(
-                            onPressed: () => Get.toNamed(AppRoutes.profileQuizHistory),
+                            onPressed: () =>
+                                Get.toNamed(AppRoutes.profileQuizHistory),
                             child: const Text('Riwayat Kuis'),
                           ),
                         ],
@@ -59,19 +56,12 @@ class ProfileQuizView extends GetView<ProfileQuizController> {
                           (item) => Padding(
                             padding: const EdgeInsets.only(bottom: 12),
                             child: GestureDetector(
-                              onTap: () {
-                                Get.toNamed(
-                                  AppRoutes.profileQuizDetail,
-                                  arguments: {'kuis_id': item['id']},
-                                );
-                              },
+                              onTap: () => _openQuiz(item),
                               child: _quizCard(
-                                title: item['judul']?.toString() ?? 'Kuis',
+                                title: _quizTitle(item, fallback: 'Kuis'),
                                 subtitle:
-                                    '${item['pertanyaan_count'] ?? 0} soal',
-                                status: (item['status_aktif'] == true)
-                                    ? 'Aktif'
-                                    : 'Nonaktif',
+                                    '${item['pertanyaan_count'] ?? 0} soal • Nilai ${_scoreText(item)}',
+                                status: _statusText(item),
                                 color: const Color(0xFF4CAF50),
                               ),
                             ),
@@ -87,12 +77,7 @@ class ProfileQuizView extends GetView<ProfileQuizController> {
                           (item) => Padding(
                             padding: const EdgeInsets.only(bottom: 12),
                             child: GestureDetector(
-                              onTap: () {
-                                Get.toNamed(
-                                  AppRoutes.profileQuizDetail,
-                                  arguments: {'kuis_id': item['id']},
-                                );
-                              },
+                              onTap: () => _openQuiz(item, isMateri: true),
                               child: _quizMateriCard(item),
                             ),
                           ),
@@ -108,16 +93,30 @@ class ProfileQuizView extends GetView<ProfileQuizController> {
     );
   }
 
-  Widget _heroCard({
-    required int totalUmum,
-    required int totalMateri,
-    required int completed,
-  }) {
+  Future<void> _openQuiz(
+    Map<String, dynamic> item, {
+    bool isMateri = false,
+  }) async {
+    final completed = _isCompleted(item);
+    final args = <String, dynamic>{
+      'kuis_id': _quizId(item),
+      'is_completed': completed,
+      'score': _scoreText(item),
+    };
+    if (isMateri) {
+      args['materi_id'] = _materiId(item);
+    }
+    await Get.toNamed(AppRoutes.profileQuizDetail, arguments: args);
+    await controller.fetchKuis();
+  }
+
+  Widget _podiumCard() {
+    final top = _topHistory();
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFFFFF3E0), Color(0xFFFFE0B2)],
+          colors: [Color(0xFFFFF3E0), Color(0xFFE8F5E9), Color(0xFFE3F2FD)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -130,45 +129,132 @@ class ProfileQuizView extends GetView<ProfileQuizController> {
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
+          const Text(
+            'Podium nilai terbaik',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+              color: AppColors.textBlack,
+              fontFamily: 'Roboto',
             ),
-            child: const Icon(Icons.quiz_rounded, color: AppColors.orange),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(height: 14),
+          if (top.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.92),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Text(
+                'Belum ada riwayat kuis.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textBlack,
+                ),
+              ),
+            )
+          else
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                const Text(
-                  'Latih pemahamanmu',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textBlack,
-                    fontFamily: 'Roboto',
+                _podiumResult(
+                  item: top.length > 1 ? top[1] : null,
+                  height: 86,
+                  color: const Color(0xFF81D4FA),
+                  rank: '2',
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _podiumResult(
+                    item: top.first,
+                    height: 118,
+                    color: const Color(0xFFFFB300),
+                    rank: '1',
+                    isWinner: true,
                   ),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  '$totalUmum kuis umum • $totalMateri kuis materi • $completed materi selesai',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textBlack,
-                    height: 1.4,
-                    fontFamily: 'Roboto',
-                  ),
+                const SizedBox(width: 8),
+                _podiumResult(
+                  item: top.length > 2 ? top[2] : null,
+                  height: 72,
+                  color: const Color(0xFFA5D6A7),
+                  rank: '3',
                 ),
               ],
             ),
-          ),
         ],
       ),
+    );
+  }
+
+  Widget _podiumResult({
+    required Map<String, dynamic>? item,
+    required double height,
+    required Color color,
+    required String rank,
+    bool isWinner = false,
+  }) {
+    final title = item == null ? '-' : _historyTitle(item);
+    final score = item == null ? '-' : _historyScoreText(item);
+    return Column(
+      children: [
+        if (isWinner)
+          const Icon(
+            Icons.emoji_events_rounded,
+            color: Color(0xFFFFB300),
+            size: 30,
+          ),
+        Text(
+          score,
+          style: TextStyle(
+            fontSize: isWinner ? 26 : 18,
+            fontWeight: FontWeight.w900,
+            color: AppColors.textBlack,
+          ),
+        ),
+        const SizedBox(height: 5),
+        Container(
+          width: 54,
+          height: height,
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                rank,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                title,
+                maxLines: isWinner ? 3 : 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -249,18 +335,156 @@ class ProfileQuizView extends GetView<ProfileQuizController> {
 
   Widget _quizMateriCard(Map<String, dynamic> item) {
     final materi = item['materi'] as Map<String, dynamic>? ?? {};
-    final materiId = materi['id']?.toString();
-    final progress = materiId != null ? controller.progressMap[materiId] : null;
-    final progressValue = (progress is Map && progress['progres'] != null)
-        ? progress['progres'].toString()
-        : '0';
-    final status = (item['status_aktif'] == true) ? 'Aktif' : 'Nonaktif';
     return _quizCard(
-      title: item['judul']?.toString() ?? 'Kuis Materi',
-      subtitle: '${materi['judul'] ?? 'Materi'} • $progressValue% progres',
-      status: status,
+      title: _quizTitle(item, fallback: 'Kuis Materi'),
+      subtitle: '${materi['judul'] ?? 'Materi'} • Nilai ${_scoreText(item)}',
+      status: _statusText(item),
       color: const Color(0xFF3F51B5),
     );
+  }
+
+  List<Map<String, dynamic>> _topHistory() {
+    final items = [...controller.riwayatKuis];
+    items.sort(
+      (a, b) => (_historyScore(b) ?? -1).compareTo(_historyScore(a) ?? -1),
+    );
+    return items.take(3).toList();
+  }
+
+  int _quizId(Map<String, dynamic> item) {
+    final nested = item['kuis'];
+    final raw =
+        item['id'] ??
+        item['kuis_id'] ??
+        item['quiz_id'] ??
+        (nested is Map ? nested['id'] ?? nested['kuis_id'] : null);
+    return int.tryParse(raw?.toString() ?? '') ?? 0;
+  }
+
+  int _materiId(Map<String, dynamic> item) {
+    final nested = item['materi'];
+    final raw =
+        item['materi_id'] ??
+        (nested is Map ? nested['id'] ?? nested['materi_id'] : null);
+    return int.tryParse(raw?.toString() ?? '') ?? 0;
+  }
+
+  String _quizTitle(Map<String, dynamic> item, {required String fallback}) {
+    final nested = item['kuis'];
+    final raw =
+        item['judul'] ??
+        item['title'] ??
+        item['kuis_judul'] ??
+        (nested is Map ? nested['judul'] ?? nested['title'] : null);
+    final title = raw?.toString() ?? '';
+    return title.isNotEmpty ? title : fallback;
+  }
+
+  bool _isCompleted(Map<String, dynamic> item) {
+    if (_historyForQuiz(item) != null) return true;
+    final score = _scoreValue(item);
+    return item['is_completed'] == true ||
+        item['completed'] == true ||
+        item['sudah_dikerjakan'] == true ||
+        item['has_submitted'] == true ||
+        item['hasil_id'] != null ||
+        score != null;
+  }
+
+  String _statusText(Map<String, dynamic> item) {
+    if (_isCompleted(item)) return 'Selesai';
+    return (item['status_aktif'] == false) ? 'Nonaktif' : 'Mulai';
+  }
+
+  String _scoreText(Map<String, dynamic> item) {
+    final history = _historyForQuiz(item);
+    if (history != null) return _historyScoreText(history);
+    final score = _scoreValue(item);
+    return score == null ? '-' : score.toStringAsFixed(score % 1 == 0 ? 0 : 1);
+  }
+
+  double? _scoreValue(Map<String, dynamic> item) {
+    final materiId = _materiId(item);
+    final progress = materiId > 0 ? controller.progressMap['$materiId'] : null;
+    final raw =
+        item['skor'] ??
+        item['nilai'] ??
+        item['score'] ??
+        item['best_score'] ??
+        item['skor_terbaik'] ??
+        item['nilai_terbaik'] ??
+        (progress is Map
+            ? progress['skor'] ??
+                  progress['nilai'] ??
+                  progress['score'] ??
+                  progress['best_score']
+            : null);
+    return double.tryParse(raw?.toString() ?? '');
+  }
+
+  Map<String, dynamic>? _historyForQuiz(Map<String, dynamic> item) {
+    final quizId = _quizId(item);
+    final materiId = _materiId(item);
+    final title = _normalize(_quizTitle(item, fallback: ''));
+    for (final history in controller.riwayatKuis) {
+      final historyQuizId = _historyQuizId(history);
+      final historyMateriId = _historyMateriId(history);
+      final historyTitle = _normalize(_historyTitle(history));
+      if (quizId > 0 && historyQuizId == quizId) return history;
+      if (materiId > 0 && historyMateriId == materiId) return history;
+      if (title.isNotEmpty && title == historyTitle) return history;
+    }
+    return null;
+  }
+
+  int _historyQuizId(Map<String, dynamic> item) {
+    final nested = item['kuis'];
+    final raw =
+        item['kuis_id'] ??
+        item['quiz_id'] ??
+        item['id_kuis'] ??
+        (nested is Map ? nested['id'] ?? nested['kuis_id'] : null);
+    return int.tryParse(raw?.toString() ?? '') ?? 0;
+  }
+
+  int _historyMateriId(Map<String, dynamic> item) {
+    final nested = item['materi'];
+    final raw =
+        item['materi_id'] ??
+        item['id_materi'] ??
+        (nested is Map ? nested['id'] ?? nested['materi_id'] : null);
+    return int.tryParse(raw?.toString() ?? '') ?? 0;
+  }
+
+  String _historyTitle(Map<String, dynamic> item) {
+    final nested = item['kuis'];
+    final raw =
+        item['kuis_judul'] ??
+        item['judul'] ??
+        item['title'] ??
+        (nested is Map ? nested['judul'] ?? nested['title'] : null);
+    final title = raw?.toString() ?? '';
+    return title.isNotEmpty ? title : 'Kuis';
+  }
+
+  double? _historyScore(Map<String, dynamic> item) {
+    final raw =
+        item['skor'] ??
+        item['nilai'] ??
+        item['score'] ??
+        item['best_score'] ??
+        item['skor_terbaik'] ??
+        item['nilai_terbaik'];
+    return double.tryParse(raw?.toString() ?? '');
+  }
+
+  String _historyScoreText(Map<String, dynamic> item) {
+    final score = _historyScore(item);
+    return score == null ? '-' : score.toStringAsFixed(score % 1 == 0 ? 0 : 1);
+  }
+
+  String _normalize(String value) {
+    return value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
   }
 
   Widget _sectionTitle(String title) {
@@ -291,11 +515,7 @@ class ProfileQuizView extends GetView<ProfileQuizController> {
       ),
       child: Text(
         text,
-        style: TextStyle(
-          color: Colors.grey[700],
-          fontSize: 13,
-          height: 1.4,
-        ),
+        style: TextStyle(color: Colors.grey[700], fontSize: 13, height: 1.4),
       ),
     );
   }

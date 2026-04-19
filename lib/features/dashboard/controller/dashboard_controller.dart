@@ -1,6 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/fiksi_service.dart';
 import '../../../core/services/level_service.dart';
@@ -11,6 +11,7 @@ import '../../../core/utils/api_config.dart';
 import '../../../core/services/youtube_ai_service.dart';
 import '../../youtube/view/youtube_result_view.dart';
 import '../../../routes/app_routes.dart';
+import '../../rak_buku/controller/rak_buku_controller.dart';
 
 class DashboardController extends GetxController {
   // Selected index for bottom navigation
@@ -29,6 +30,7 @@ class DashboardController extends GetxController {
   final RxString lastSessionMateriTitle = ''.obs;
   final RxInt lastSessionProgress = RxInt(0);
   final RxInt lastSessionPage = RxInt(0);
+  final RxBool hasLastSession = false.obs;
 
   // Variabel baru untuk fitur YouTube
   final RxList<Map<String, dynamic>> youtubeVideos =
@@ -231,6 +233,9 @@ class DashboardController extends GetxController {
 
   void changeIndex(int index) {
     selectedIndex.value = index;
+    if (index == 1 && Get.isRegistered<RakBukuController>()) {
+      Get.find<RakBukuController>().fetchItems();
+    }
   }
 
   void changeTab(String tab) {
@@ -323,16 +328,7 @@ class DashboardController extends GetxController {
       final list = _extractList(response);
       if (list != null) {
         materi.assignAll(list);
-        // load last session for the first materi to show "Lanjutkan Belajar"
-        if (materi.isNotEmpty) {
-          final first = materi.first;
-          final id = first['id'];
-          if (id is int) {
-            lastSessionMateriId.value = id;
-            lastSessionMateriTitle.value = first['judul']?.toString() ?? '';
-            await fetchLastSessionFor(id);
-          }
-        }
+        await fetchLatestReadingSession();
       } else {
         final statusCode = response['_status_code'] as int?;
         if (statusCode != 404) {
@@ -512,6 +508,140 @@ class DashboardController extends GetxController {
     } catch (e) {
       debugPrint('[Dashboard] getLastSession error -> $e');
     }
+  }
+
+  Future<void> fetchLatestReadingSession() async {
+    hasLastSession.value = false;
+    lastSessionMateriId.value = 0;
+    lastSessionMateriTitle.value = '';
+    lastSessionProgress.value = 0;
+    lastSessionPage.value = 0;
+    if (materi.isEmpty) return;
+
+    final fromList = await _latestSessionFromList();
+    if (fromList != null) {
+      _applyLatestSession(fromList);
+      return;
+    }
+
+    final fallback = await _latestSessionFromMateriChecks();
+    if (fallback != null) {
+      _applyLatestSession(fallback);
+    }
+  }
+
+  Future<Map<String, dynamic>?> _latestSessionFromList() async {
+    try {
+      final res = await SesiBacaService.list(perPage: 50);
+      debugPrint('[Dashboard] sesi list -> $res');
+      final list = _extractList(res);
+      if (list == null || list.isEmpty) return null;
+
+      final sorted = [...list];
+      sorted.sort((a, b) {
+        final aTime = _sessionTime(a);
+        final bTime = _sessionTime(b);
+        return bTime.compareTo(aTime);
+      });
+
+      for (final session in sorted) {
+        final materiId = _parseMateriIdFromSession(session);
+        if (materiId == null || materiId <= 0) continue;
+        final item = _materiById(materiId);
+        if (item == null) continue;
+        return {'session': session, 'materi': item, 'materi_id': materiId};
+      }
+    } catch (e) {
+      debugPrint('[Dashboard] sesi list error -> $e');
+    }
+    return null;
+  }
+
+  Future<Map<String, dynamic>?> _latestSessionFromMateriChecks() async {
+    final prefs = await SharedPreferences.getInstance();
+    Map<String, dynamic>? best;
+    var bestPage = 0;
+    for (final item in materi) {
+      final id = _parseInt(item['id']);
+      if (id == null || id <= 0) continue;
+      try {
+        final res = await SesiBacaService.getLast(id);
+        final page =
+            _parseInt(res['halaman_terakhir']) ??
+            prefs.getInt('materi_${id}_last_page') ??
+            0;
+        final progress = _parseInt(res['progres_persen']) ?? 0;
+        if (page > 0 && page >= bestPage) {
+          bestPage = page;
+          best = {
+            'session': {
+              ...res,
+              'halaman_terakhir': page,
+              'progres_persen': progress,
+            },
+            'materi': item,
+            'materi_id': id,
+          };
+        }
+      } catch (_) {
+        final page = prefs.getInt('materi_${id}_last_page') ?? 0;
+        if (page > 0 && page >= bestPage) {
+          bestPage = page;
+          best = {
+            'session': {'halaman_terakhir': page, 'progres_persen': 0},
+            'materi': item,
+            'materi_id': id,
+          };
+        }
+      }
+    }
+    return best;
+  }
+
+  void _applyLatestSession(Map<String, dynamic> data) {
+    final session = data['session'] as Map<String, dynamic>;
+    final item = data['materi'] as Map<String, dynamic>;
+    final id = _parseInt(data['materi_id']) ?? _parseInt(item['id']) ?? 0;
+    if (id <= 0) return;
+
+    hasLastSession.value = true;
+    lastSessionMateriId.value = id;
+    lastSessionMateriTitle.value = item['judul']?.toString() ?? '';
+    lastSessionPage.value = _parseInt(session['halaman_terakhir']) ?? 0;
+    lastSessionProgress.value = _parseInt(session['progres_persen']) ?? 0;
+  }
+
+  Map<String, dynamic>? _materiById(int id) {
+    for (final item in materi) {
+      if (_parseInt(item['id']) == id) return item;
+    }
+    return null;
+  }
+
+  int? _parseMateriIdFromSession(Map<String, dynamic> session) {
+    final direct = _parseInt(session['materi_id']);
+    if (direct != null) return direct;
+    final materiObj = session['materi'];
+    if (materiObj is Map) {
+      return _parseInt(materiObj['id']) ?? _parseInt(materiObj['materi_id']);
+    }
+    return null;
+  }
+
+  DateTime _sessionTime(Map<String, dynamic> session) {
+    final raw =
+        session['updated_at'] ??
+        session['terakhir_dibaca_at'] ??
+        session['last_read_at'] ??
+        session['created_at'] ??
+        '';
+    return DateTime.tryParse(raw.toString()) ??
+        DateTime.fromMillisecondsSinceEpoch(0);
+  }
+
+  int? _parseInt(dynamic raw) {
+    if (raw is int) return raw;
+    return int.tryParse(raw?.toString() ?? '');
   }
 
   String _friendlyYoutubeError(Object error) {

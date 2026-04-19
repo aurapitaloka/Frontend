@@ -27,6 +27,15 @@ class _VoiceCommandScopeState extends State<VoiceCommandScope> {
   }
 
   @override
+  void didUpdateWidget(covariant VoiceCommandScope oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.commands, widget.commands)) {
+      controller.popCommands(oldWidget.commands);
+      controller.pushCommands(widget.commands);
+    }
+  }
+
+  @override
   void dispose() {
     controller.popCommands(widget.commands);
     super.dispose();

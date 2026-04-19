@@ -1,6 +1,6 @@
 class ApiConfig {
   // Ganti dengan URL backend Anda
-  static const String baseUrl = 'https://a5c5-103-173-139-235.ngrok-free.app/api';
+  static const String baseUrl = 'https://cholesterol-voting-ear-executive.trycloudflare.com/api';
   static String get baseHost =>
       baseUrl.endsWith('/api')
           ? baseUrl.substring(0, baseUrl.length - 4)

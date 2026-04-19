@@ -88,174 +88,242 @@ class ProfileView extends GetView<ProfileController> {
                 ),
                 const SizedBox(height: 18),
 
-                const SizedBox(height: 24),
-
                 // Profile Card
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.06),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
+                  child: GestureDetector(
+                    onTap: controller.navigateToProfileSettings,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Colors.white, Color(0xFFFFFBE6)],
                         ),
-                      ],
-                    ),
-                    child: Obx(
-                      () => Column(
-                        children: [
-                          // Profile Picture
-                          Stack(
-                            children: [
-                              Container(
-                                width: 90,
-                                height: 90,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      AppColors.orange,
-                                      AppColors.orange.withOpacity(0.7),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: const Color(0xFFFFE88A),
+                          width: 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFFFC400).withOpacity(0.12),
+                            blurRadius: 18,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: Obx(
+                        () => Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                Container(
+                                  width: 76,
+                                  height: 76,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: const LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        Color(0xFFFF7A00),
+                                        Color(0xFFFFB02E),
+                                      ],
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppColors.orange.withOpacity(
+                                          0.22,
+                                        ),
+                                        blurRadius: 16,
+                                        offset: const Offset(0, 8),
+                                      ),
                                     ],
                                   ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: AppColors.orange.withOpacity(0.3),
-                                      blurRadius: 12,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
+                                  child:
+                                      controller.profileImageUrl.value.isEmpty
+                                      ? const Icon(
+                                          Icons.person,
+                                          size: 38,
+                                          color: Colors.white,
+                                        )
+                                      : ClipOval(
+                                          child: Image.network(
+                                            controller.profileImageUrl.value,
+                                            fit: BoxFit.cover,
+                                            errorBuilder:
+                                                (context, error, stackTrace) {
+                                                  return const Icon(
+                                                    Icons.person,
+                                                    size: 38,
+                                                    color: Colors.white,
+                                                  );
+                                                },
+                                          ),
+                                        ),
                                 ),
-                                child: controller.profileImageUrl.value.isEmpty
-                                    ? const Icon(
-                                        Icons.person,
-                                        size: 45,
+                                Positioned(
+                                  bottom: -2,
+                                  right: -2,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(7),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.yellow,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
                                         color: Colors.white,
-                                      )
-                                    : ClipOval(
-                                        child: Image.network(
-                                          controller.profileImageUrl.value,
-                                          fit: BoxFit.cover,
-                                          errorBuilder:
-                                              (context, error, stackTrace) {
-                                                return const Icon(
-                                                  Icons.person,
-                                                  size: 45,
-                                                  color: Colors.white,
-                                                );
-                                              },
+                                        width: 2,
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.camera_alt_rounded,
+                                      size: 14,
+                                      color: AppColors.orange,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 5,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(
+                                        0xFFFFE85A,
+                                      ).withOpacity(0.55),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Text(
+                                      'Akun Siswa',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        height: 1,
+                                        color: Color(0xFF9A4A00),
+                                        fontFamily: 'Roboto',
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 9),
+                                  Text(
+                                    controller.userName.value,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 21,
+                                      height: 1.1,
+                                      fontWeight: FontWeight.w900,
+                                      color: AppColors.textBlack,
+                                      fontFamily: 'Roboto',
+                                    ),
+                                  ),
+                                  const SizedBox(height: 5),
+                                  Text(
+                                    controller.userEmail.value,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.grey[600],
+                                      fontFamily: 'Roboto',
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  if (controller.isLoading.value)
+                                    const Padding(
+                                      padding: EdgeInsets.only(top: 8),
+                                      child: SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
                                         ),
                                       ),
-                              ),
-                              Positioned(
-                                bottom: 0,
-                                right: 0,
-                                child: Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.yellow,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: Colors.white,
-                                      width: 2,
                                     ),
-                                  ),
-                                  child: const Icon(
-                                    Icons.camera_alt_rounded,
-                                    size: 14,
-                                    color: AppColors.orange,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          // Name
-                          Text(
-                            controller.userName.value,
-                            style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textBlack,
-                              fontFamily: 'Roboto',
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            controller.userEmail.value,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey[600],
-                              fontFamily: 'Roboto',
-                            ),
-                          ),
-                          if (controller.isLoading.value)
-                            const Padding(
-                              padding: EdgeInsets.only(top: 10),
-                              child: SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
+                                  if (controller.errorMessage.value.isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 8),
+                                      child: Text(
+                                        controller.errorMessage.value,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.red[400],
+                                          fontFamily: 'Roboto',
+                                        ),
+                                      ),
+                                    ),
+                                ],
                               ),
                             ),
-                          if (controller.errorMessage.value.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 10),
-                              child: Text(
-                                controller.errorMessage.value,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.red[400],
-                                  fontFamily: 'Roboto',
-                                ),
+                            Container(
+                              width: 34,
+                              height: 34,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.86),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.chevron_right_rounded,
+                                color: AppColors.orange,
+                                size: 23,
                               ),
                             ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 14),
 
                 // Statistics Cards
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: _buildStatCard(
-                          icon: Icons.check_circle_rounded,
-                          number: controller.completedMaterials.value
-                              .toString(),
-                          label: 'Materi',
-                          subLabel: 'Terselesaikan',
-                          color: const Color(0xFF4CAF50),
+                  child: Obx(
+                    () => Row(
+                      children: [
+                        Expanded(
+                          child: _buildStatCard(
+                            icon: Icons.check_circle_rounded,
+                            number: controller.completedMaterials.value
+                                .toString(),
+                            label: 'Selesai',
+                            subLabel: 'Materi',
+                            color: const Color(0xFF2E9E5B),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: _buildStatCard(
-                          icon: Icons.access_time_rounded,
-                          number: controller.pendingMaterials.value.toString(),
-                          label: 'Materi',
-                          subLabel: 'Menunggu',
-                          color: const Color(0xFFFF9800),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildStatCard(
+                            icon: Icons.access_time_rounded,
+                            number: controller.pendingMaterials.value
+                                .toString(),
+                            label: 'Menunggu',
+                            subLabel: 'Materi',
+                            color: const Color(0xFFE5A100),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
 
-                const SizedBox(height: 28),
+                const SizedBox(height: 24),
 
                 // Kelola Akun Section
                 Padding(
@@ -362,57 +430,76 @@ class ProfileView extends GetView<ProfileController> {
     required Color color,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.12), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+            color: color.withOpacity(0.08),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            width: 38,
+            height: 38,
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, color: color, size: 22),
+            child: Icon(icon, color: color, size: 21),
           ),
-          const SizedBox(height: 12),
-          Text(
-            number,
-            style: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textBlack,
-              fontFamily: 'Roboto',
-              height: 1,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textBlack,
-              fontFamily: 'Roboto',
-            ),
-          ),
-          Text(
-            subLabel,
-            style: TextStyle(
-              fontSize: 12,
-              color: color,
-              fontFamily: 'Roboto',
-              fontWeight: FontWeight.w500,
+          const SizedBox(width: 11),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      number,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.textBlack,
+                        fontFamily: 'Roboto',
+                        height: 1,
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 2),
+                      child: Text(
+                        subLabel,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey[600],
+                          fontFamily: 'Roboto',
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: color,
+                    fontFamily: 'Roboto',
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

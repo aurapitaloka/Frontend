@@ -70,20 +70,21 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
               },
             ),
             actions: [
-              Obx(
-                () => IconButton(
-                  onPressed: controller.toggleRak,
-                  icon: Icon(
-                    controller.inRak.value
-                        ? Icons.library_books_rounded
-                        : Icons.library_add_rounded,
-                    color: controller.inRak.value
-                        ? AppColors.yellow
-                        : AppColors.orange,
+              if (!controller.isFiksi)
+                Obx(
+                  () => IconButton(
+                    onPressed: controller.toggleRak,
+                    icon: Icon(
+                      controller.inRak.value
+                          ? Icons.library_books_rounded
+                          : Icons.library_add_rounded,
+                      color: controller.inRak.value
+                          ? AppColors.yellow
+                          : AppColors.orange,
+                    ),
+                    tooltip: 'Rak Buku',
                   ),
-                  tooltip: 'Rak Buku',
                 ),
-              ),
               Obx(
                 () => IconButton(
                   onPressed: controller.toggleVoice,
@@ -197,7 +198,11 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
       builder: (dialogContext) {
         return AlertDialog(
           title: const Text('Konfirmasi keluar'),
-          content: const Text('Yakin ingin keluar dari materi ini?'),
+          content: Text(
+            controller.isFiksi
+                ? 'Yakin ingin keluar dari buku fiksi ini?'
+                : 'Yakin ingin keluar dari materi ini?',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -222,26 +227,35 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
   }
 
   Widget _buildMaterialSection() {
-    final hasPdf = controller.pdfUrl != null && controller.pdfUrl!.isNotEmpty;
-    if (!hasPdf) {
-      return _buildTextSlides();
-    }
+    return Obx(() {
+      if (!controller.isLastPageLoaded.value) {
+        return const Center(
+          child: CircularProgressIndicator(color: AppColors.orange),
+        );
+      }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(child: _buildReaderCard(_buildPdfViewer())),
-        const SizedBox(height: 12),
-        _buildProgressBar(),
-        const SizedBox(height: 12),
-        _buildQuizCta(),
-      ],
-    );
+      final hasPdf = controller.pdfUrl != null && controller.pdfUrl!.isNotEmpty;
+      if (!hasPdf) {
+        return _buildTextSlides();
+      }
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(child: _buildReaderCard(_buildPdfViewer())),
+          const SizedBox(height: 12),
+          _buildProgressBar(),
+          const SizedBox(height: 12),
+          _buildQuizCta(),
+        ],
+      );
+    });
   }
 
   Widget _buildPdfViewer() {
     return _LargePdfViewer(
       pdfUrl: controller.pdfUrl!,
+      initialPage: controller.readerStartPage,
       onControlsReady: controller.registerPdfPageControls,
       onControlsDisposed: controller.clearPdfPageControls,
       onPageChanged: (current, total) {
@@ -279,22 +293,29 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
   }
 
   Widget _buildTextSlides() {
-    const textStyle = TextStyle(
-      fontSize: 15,
-      height: 1.6,
+    final textStyle = TextStyle(
+      fontSize: controller.isFiksi ? 20 : 15,
+      height: controller.isFiksi ? 1.55 : 1.6,
       color: AppColors.textBlack,
       fontFamily: 'Roboto',
+      fontWeight: controller.isFiksi ? FontWeight.w500 : FontWeight.normal,
     );
+    final pagePadding = EdgeInsets.all(controller.isFiksi ? 24 : 18);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (controller.isFiksi) ...[
+          _buildFiksiHeader(),
+          const SizedBox(height: 12),
+        ],
         Expanded(
           child: _buildReaderCard(
             LayoutBuilder(
               builder: (context, constraints) {
-                final innerWidth = constraints.maxWidth - 36;
-                final innerHeight = constraints.maxHeight - 36;
+                final pageInset = controller.isFiksi ? 48.0 : 36.0;
+                final innerWidth = constraints.maxWidth - pageInset;
+                final innerHeight = constraints.maxHeight - pageInset;
                 final pages = _paginateText(
                   controller.body,
                   textStyle,
@@ -305,11 +326,11 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
 
                 return PageFlipWidget(
                   key: ValueKey(
-                    'text_flip_${pages.length}_${controller.lastSessionPage.value}',
+                    'text_flip_${pages.length}_${controller.readerStartPage}',
                   ),
                   controller: controller.textFlipController,
                   backgroundColor: Colors.white,
-                  initialIndex: (controller.lastSessionPage.value - 1).clamp(
+                  initialIndex: (controller.readerStartPage - 1).clamp(
                     0,
                     pages.length - 1,
                   ),
@@ -320,7 +341,7 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
                       .map(
                         (text) => Container(
                           color: Colors.white,
-                          padding: const EdgeInsets.all(18),
+                          padding: pagePadding,
                           alignment: Alignment.topLeft,
                           child: Text(text, style: textStyle),
                         ),
@@ -336,6 +357,92 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
         const SizedBox(height: 12),
         _buildQuizCta(),
       ],
+    );
+  }
+
+  Widget _buildFiksiHeader() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.94),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.network(
+              controller.coverImage,
+              width: 72,
+              height: 96,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                width: 72,
+                height: 96,
+                color: AppColors.yellow.withValues(alpha: 0.28),
+                child: const Icon(
+                  Icons.auto_stories_rounded,
+                  color: AppColors.orange,
+                  size: 34,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  controller.category.isNotEmpty
+                      ? controller.category
+                      : 'Buku Fiksi',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.orange,
+                    fontFamily: 'Roboto',
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  controller.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textBlack,
+                    height: 1.2,
+                    fontFamily: 'Roboto',
+                  ),
+                ),
+                if (controller.subtitle.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    controller.subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Colors.grey[700],
+                      fontFamily: 'Roboto',
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -545,12 +652,14 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
 class _LargePdfViewer extends StatefulWidget {
   const _LargePdfViewer({
     required this.pdfUrl,
+    required this.initialPage,
     required this.onControlsReady,
     required this.onControlsDisposed,
     required this.onPageChanged,
   });
 
   final String pdfUrl;
+  final int initialPage;
   final void Function({
     required Future<void> Function() nextPage,
     required Future<void> Function() previousPage,
@@ -575,7 +684,8 @@ class _LargePdfViewerState extends State<_LargePdfViewer> {
   @override
   void didUpdateWidget(covariant _LargePdfViewer oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.pdfUrl != widget.pdfUrl) {
+    if (oldWidget.pdfUrl != widget.pdfUrl ||
+        oldWidget.initialPage != widget.initialPage) {
       _pdfController?.dispose();
       _pdfController = null;
       _loadPdf();
@@ -585,6 +695,7 @@ class _LargePdfViewerState extends State<_LargePdfViewer> {
   void _loadPdf() {
     _pdfController = PdfController(
       document: _openNetworkPdf(widget.pdfUrl),
+      initialPage: widget.initialPage < 1 ? 1 : widget.initialPage,
       viewportFraction: 1,
     );
     widget.onControlsReady(
