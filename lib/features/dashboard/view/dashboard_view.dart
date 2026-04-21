@@ -197,7 +197,7 @@ class DashboardView extends GetView<DashboardController> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Text(
-                                  'AKSES',
+                                  'Ruma',
                                   style: TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.w800,

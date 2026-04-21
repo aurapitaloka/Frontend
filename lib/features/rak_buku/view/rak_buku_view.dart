@@ -72,99 +72,137 @@ class RakBukuView extends GetView<RakBukuController> {
               ),
               const SizedBox(height: 12),
 
-            // List materi yang ada di Rak Buku (dari backend)
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Obx(() {
-                  if (controller.isLoading.value) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (controller.error.value.isNotEmpty) {
-                    return Center(child: Text(controller.error.value));
-                  }
-                  if (controller.items.isEmpty) {
-                    return const Center(child: Text('Rak Buku kosong'));
-                  }
-                  return GridView.builder(
-                    physics: const BouncingScrollPhysics(),
-                    controller: controller.scrollController,
-                    itemCount: controller.items.length,
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 0.55,
-                    ),
-                    itemBuilder: (context, index) {
-                      final entry = controller.items[index];
-                      final materi = controller.materiFromEntry(entry);
-                      final title = materi['judul']?.toString() ?? 'Materi';
-                      final subtitle = '${materi['level']?['nama'] ?? ''}';
-                      final coverPath = materi['cover_path']?.toString();
-                      final cover = ApiConfig.resolveStorageUrl(coverPath) ?? '';
-                      final filePath = materi['file_path']?.toString();
-                      final pdfUrl = ApiConfig.resolveStorageUrl(filePath);
+              // List materi yang ada di Rak Buku (dari backend)
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                  child: Obx(() {
+                    if (controller.isLoading.value) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (controller.error.value.isNotEmpty) {
+                      return Center(child: Text(controller.error.value));
+                    }
+                    if (controller.items.isEmpty) {
+                      return const Center(child: Text('Rak Buku kosong'));
+                    }
+                    return GridView.builder(
+                      physics: const BouncingScrollPhysics(),
+                      controller: controller.scrollController,
+                      itemCount: controller.items.length,
+                      padding: const EdgeInsets.only(bottom: 92),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 14,
+                            childAspectRatio: 0.58,
+                          ),
+                      itemBuilder: (context, index) {
+                        final entry = controller.items[index];
+                        final materi = controller.materiFromEntry(entry);
+                        final title = materi['judul']?.toString() ?? 'Materi';
+                        final subtitle = '${materi['level']?['nama'] ?? ''}';
+                        final coverPath = materi['cover_path']?.toString();
+                        final cover =
+                            ApiConfig.resolveStorageUrl(coverPath) ?? '';
+                        final filePath = materi['file_path']?.toString();
+                        final pdfUrl = ApiConfig.resolveStorageUrl(filePath);
 
-                      return GestureDetector(
-                        onTap: () {
-                          Get.toNamed(
-                            AppRoutes.materialDetail,
-                            arguments: {
-                              'title': title,
-                              'subtitle': subtitle,
-                              'category': 'Rak Buku',
-                              'body': materi['konten_teks']?.toString() ?? '',
-                              'coverImage': cover,
-                              'pdfUrl': pdfUrl,
-                              'materi_id': materi['id'],
-                            },
-                          );
-                        },
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              height: 180,
+                        return GestureDetector(
+                          onTap: () {
+                            Get.toNamed(
+                              AppRoutes.materialDetail,
+                              arguments: {
+                                'title': title,
+                                'subtitle': subtitle,
+                                'category': 'Rak Buku',
+                                'body': materi['konten_teks']?.toString() ?? '',
+                                'coverImage': cover,
+                                'pdfUrl': pdfUrl,
+                                'materi_id': materi['id'],
+                              },
+                            );
+                          },
+                          child: Align(
+                            alignment: Alignment.topCenter,
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(14),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 3),
+                                    color: Colors.black.withOpacity(0.06),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 5),
                                   ),
                                 ],
-
-                                color: Colors.grey[200],
-                                image: cover.isNotEmpty
-                                    ? DecorationImage(
-                                        image: NetworkImage(cover),
-                                        fit: BoxFit.cover,
-                                      )
-                                    : null,
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  AspectRatio(
+                                    aspectRatio: 0.78,
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: Container(
+                                        color: Colors.grey[200],
+                                        child: cover.isNotEmpty
+                                            ? Image.network(
+                                                cover,
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (_, __, ___) =>
+                                                    const Icon(
+                                                      Icons.menu_book_rounded,
+                                                      color: AppColors.orange,
+                                                      size: 36,
+                                                    ),
+                                              )
+                                            : const Icon(
+                                                Icons.menu_book_rounded,
+                                                color: AppColors.orange,
+                                                size: 36,
+                                              ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 9),
+                                  Text(
+                                    title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      height: 1.15,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColors.textBlack,
+                                      fontFamily: 'Roboto',
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    subtitle.isNotEmpty ? subtitle : 'Materi',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey[600],
+                                      fontFamily: 'Roboto',
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              title,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              subtitle,
-                              style: TextStyle(color: Colors.grey[600]),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  );
-                }),
+                          ),
+                        );
+                      },
+                    );
+                  }),
+                ),
               ),
-            ),
             ],
           ),
         ),

@@ -97,7 +97,7 @@ class _WelcomeViewState extends State<WelcomeView>
                         colors: [Color(0xFFFF6B00), Color(0xFFFF8C42)],
                       ).createShader(bounds),
                       child: const Text(
-                        'AKSES',
+                        'Ruma',
                         style: TextStyle(
                           fontSize: 44,
                           fontWeight: FontWeight.bold,

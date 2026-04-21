@@ -467,7 +467,7 @@ class DashboardController extends GetxController {
 
   void _speakGuide() {
     const guideText =
-        'Selamat datang di AKSES. Gunakan tab bawah atau ucapkan dashboard, '
+        'Selamat datang di Ruma. Gunakan tab bawah atau ucapkan dashboard, '
         'rak buku, atau profil untuk berpindah halaman. '
         'Untuk AAC/komunikasi, buka dari menu profil. '
         'Ucapkan kembali atau tutup untuk kembali. '

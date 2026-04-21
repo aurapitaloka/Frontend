@@ -78,7 +78,7 @@ class LoginView extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             const Text(
-                              'AKSES',
+                              'Ruma',
                               style: TextStyle(
                                 fontSize: 28,
                                 fontWeight: FontWeight.bold,

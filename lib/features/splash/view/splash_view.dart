@@ -102,7 +102,7 @@ class _SplashViewState extends State<SplashView> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'AKSES',
+                    'Ruma',
                     style: TextStyle(
                       fontSize: 36,
                       fontWeight: FontWeight.bold,

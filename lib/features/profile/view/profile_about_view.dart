@@ -45,7 +45,7 @@ class ProfileAboutView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: const [
-          _title('AKSES'),
+          _title('Ruma'),
           SizedBox(height: 8),
           Text(
             'Aplikasi belajar tanpa sentuh untuk siswa tunadaksa. Kami menggabungkan gaze-tracking dan perintah suara agar navigasi materi lebih mudah dan inklusif.',
@@ -87,7 +87,7 @@ class ProfileAboutView extends StatelessWidget {
         children: const [
           _title('Kontak'),
           SizedBox(height: 8),
-          _bullet('Email: akses-support@example.com'),
+          _bullet('Email: ruma-support@example.com'),
           _bullet('Telepon: 0800-123-456'),
           _bullet('Dukungan teknis: buka menu Panduan di Profil.'),
         ],
