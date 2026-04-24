@@ -1,6 +1,6 @@
 class ApiConfig {
   // Ganti dengan URL backend Anda
-  static const String baseUrl = 'https://desktop-i2ggrls.tail73953a.ts.net/api';
+  static const String baseUrl = 'https://backend-production-48f1.up.railway.app/api';
   static String get baseHost =>
       baseUrl.endsWith('/api')
           ? baseUrl.substring(0, baseUrl.length - 4)

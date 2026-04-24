@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -11,6 +9,7 @@ class EditProfileController extends GetxController {
   final _formKey = GlobalKey<FormState>();
   final nameController = TextEditingController();
   final emailController = TextEditingController();
+  final kelasController = TextEditingController();
   final currentPasswordController = TextEditingController();
   final newPasswordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
@@ -64,10 +63,13 @@ class EditProfileController extends GetxController {
   Future<void> _saveToServer() async {
     final name = nameController.text.trim();
     final email = emailController.text.trim();
+    final kelas = kelasController.text.trim();
 
     final data = <String, String>{
       'nama': name,
       'email': email,
+      'kelas': kelas,
+      'class': kelas,
     };
 
     try {
@@ -117,6 +119,7 @@ class EditProfileController extends GetxController {
         final profileCtrl = Get.find<ProfileController>();
         profileCtrl.userName.value = name;
         profileCtrl.userEmail.value = email;
+        profileCtrl.userKelas.value = kelas;
       } catch (_) {}
 
       // Close edit screen
@@ -179,6 +182,7 @@ class EditProfileController extends GetxController {
   void onClose() {
     nameController.dispose();
     emailController.dispose();
+    kelasController.dispose();
     currentPasswordController.dispose();
     newPasswordController.dispose();
     confirmPasswordController.dispose();
@@ -199,15 +203,48 @@ class EditProfileController extends GetxController {
       if (user is Map<String, dynamic>) {
         final nama = user['nama']?.toString() ?? user['name']?.toString();
         final email = user['email']?.toString();
+        final kelas = _extractKelas(user);
         if (nama != null && nama.isNotEmpty) {
           nameController.text = nama;
         }
         if (email != null && email.isNotEmpty) {
           emailController.text = email;
         }
+        if (kelas.isNotEmpty) {
+          kelasController.text = kelas;
+        }
       }
     } catch (e) {
       debugPrint('[EditProfile] loadProfile error -> $e');
     }
+  }
+
+  String _extractKelas(Map<String, dynamic> user) {
+    final direct =
+        user['kelas']?.toString() ??
+        user['class']?.toString() ??
+        user['class_name']?.toString() ??
+        user['kelas_nama']?.toString();
+    if (direct != null && direct.isNotEmpty && direct != 'null') {
+      return direct;
+    }
+
+    final level = user['level'];
+    if (level is Map<String, dynamic>) {
+      final name = level['nama']?.toString() ?? level['name']?.toString();
+      if (name != null && name.isNotEmpty && name != 'null') {
+        return name;
+      }
+    }
+
+    final levelId =
+        user['level_id']?.toString() ??
+        user['kelas_id']?.toString() ??
+        user['class_id']?.toString();
+    if (levelId != null && levelId.isNotEmpty && levelId != 'null') {
+      return levelId;
+    }
+
+    return '';
   }
 }

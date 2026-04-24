@@ -103,11 +103,15 @@ class RakBukuView extends GetView<RakBukuController> {
                         final materi = controller.materiFromEntry(entry);
                         final title = materi['judul']?.toString() ?? 'Materi';
                         final subtitle = '${materi['level']?['nama'] ?? ''}';
-                        final coverPath = materi['cover_path']?.toString();
+                        final coverSource =
+                            materi['cover_url']?.toString() ??
+                            materi['cover_path']?.toString();
                         final cover =
-                            ApiConfig.resolveStorageUrl(coverPath) ?? '';
-                        final filePath = materi['file_path']?.toString();
-                        final pdfUrl = ApiConfig.resolveStorageUrl(filePath);
+                            ApiConfig.resolveStorageUrl(coverSource) ?? '';
+                        final fileSource =
+                            materi['file_url']?.toString() ??
+                            materi['file_path']?.toString();
+                        final pdfUrl = ApiConfig.resolveStorageUrl(fileSource);
 
                         return GestureDetector(
                           onTap: () {

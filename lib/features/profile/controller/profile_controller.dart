@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/services/auth_service.dart';
@@ -9,6 +8,7 @@ class ProfileController extends GetxController {
   // User data
   final RxString userName = 'Aura'.obs;
   final RxString userEmail = 'aura@example.com'.obs;
+  final RxString userKelas = ''.obs;
   final RxString profileImageUrl = ''.obs; // Empty = use placeholder
   final RxBool isLoading = false.obs;
   final RxString errorMessage = ''.obs;
@@ -37,6 +37,7 @@ class ProfileController extends GetxController {
             userCandidate['name']?.toString() ??
             userName.value;
         userEmail.value = userCandidate['email']?.toString() ?? userEmail.value;
+        userKelas.value = _extractKelas(userCandidate);
         final foto = userCandidate['foto_profil']?.toString();
         final resolved = ApiConfig.resolveStorageUrl(foto);
         if (resolved != null && resolved.isNotEmpty) {
@@ -82,5 +83,34 @@ class ProfileController extends GetxController {
   void onClose() {
     scrollController.dispose();
     super.onClose();
+  }
+
+  String _extractKelas(Map<String, dynamic> user) {
+    final direct =
+        user['kelas']?.toString() ??
+        user['class']?.toString() ??
+        user['class_name']?.toString() ??
+        user['kelas_nama']?.toString();
+    if (direct != null && direct.isNotEmpty && direct != 'null') {
+      return direct;
+    }
+
+    final level = user['level'];
+    if (level is Map<String, dynamic>) {
+      final name = level['nama']?.toString() ?? level['name']?.toString();
+      if (name != null && name.isNotEmpty && name != 'null') {
+        return name;
+      }
+    }
+
+    final levelId =
+        user['level_id']?.toString() ??
+        user['kelas_id']?.toString() ??
+        user['class_id']?.toString();
+    if (levelId != null && levelId.isNotEmpty && levelId != 'null') {
+      return levelId;
+    }
+
+    return '';
   }
 }

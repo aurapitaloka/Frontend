@@ -619,10 +619,13 @@ class DashboardView extends GetView<DashboardController> {
                           final subtitle = levelName.isNotEmpty
                               ? '$mataPelajaran | $levelName'
                               : mataPelajaran;
-                          final coverPath =
-                              (item['cover_path'] ?? item['cover_image'])
+                          final coverSource =
+                              (item['cover_url'] ??
+                                      item['cover_path'] ??
+                                      item['cover_image'])
                                   ?.toString();
-                          final coverUrl = controller.resolveFileUrl(coverPath);
+                          final coverUrl =
+                              controller.resolveFileUrl(coverSource);
                           return _buildSubjectItem(
                             title: title,
                             semester: subtitle,
@@ -640,10 +643,13 @@ class DashboardView extends GetView<DashboardController> {
                               (item['penulis'] ?? item['author'] ?? 'Penulis')
                                   .toString();
                           final kategori = item['kategori']?.toString() ?? '';
-                          final coverPath =
-                              (item['cover_path'] ?? item['cover_image'])
+                          final coverSource =
+                              (item['cover_url'] ??
+                                      item['cover_path'] ??
+                                      item['cover_image'])
                                   ?.toString();
-                          final coverUrl = controller.resolveFileUrl(coverPath);
+                          final coverUrl =
+                              controller.resolveFileUrl(coverSource);
                           return _buildFictionBookItem(
                             title: title,
                             author: author,
@@ -905,10 +911,12 @@ class DashboardView extends GetView<DashboardController> {
     final levelName =
         (item['level'] as Map?)?['nama']?.toString() ??
         controller.selectedLevelName.value;
-    final filePath = item['file_path']?.toString();
-    final pdfUrl = controller.resolveFileUrl(filePath);
-    final coverPath = item['cover_path']?.toString();
-    final coverUrl = controller.resolveFileUrl(coverPath);
+    final fileSource =
+        item['file_url']?.toString() ?? item['file_path']?.toString();
+    final pdfUrl = controller.resolveFileUrl(fileSource);
+    final coverSource =
+        item['cover_url']?.toString() ?? item['cover_path']?.toString();
+    final coverUrl = controller.resolveFileUrl(coverSource);
     await Get.toNamed(
       AppRoutes.material,
       arguments: {
@@ -935,10 +943,12 @@ class DashboardView extends GetView<DashboardController> {
     return GestureDetector(
       onTap: () async {
         final kontenTeks = materi['konten_teks']?.toString();
-        final filePath = materi['file_path']?.toString();
-        final pdfUrl = controller.resolveFileUrl(filePath);
-        final coverPath = materi['cover_path']?.toString();
-        final coverUrl = controller.resolveFileUrl(coverPath);
+        final fileSource =
+            materi['file_url']?.toString() ?? materi['file_path']?.toString();
+        final pdfUrl = controller.resolveFileUrl(fileSource);
+        final coverSource =
+            materi['cover_url']?.toString() ?? materi['cover_path']?.toString();
+        final coverUrl = controller.resolveFileUrl(coverSource);
         await Get.toNamed(
           AppRoutes.material,
           arguments: {
@@ -1146,18 +1156,19 @@ class DashboardView extends GetView<DashboardController> {
                     fiksi['konten_teks'] ??
                     fiksi['isi'])
                 ?.toString();
-        final filePath =
-            (fiksi['file_path'] ??
+        final fileSource =
+            (fiksi['file_url'] ??
+                    fiksi['file_path'] ??
                     fiksi['file'] ??
                     fiksi['pdf_path'] ??
                     fiksi['path_file'] ??
-                    fiksi['url'] ??
-                    fiksi['file_url'])
+                    fiksi['url'])
                 ?.toString();
-        final pdfUrl = controller.resolveFileUrl(filePath);
-        final coverPath = (fiksi['cover_path'] ?? fiksi['cover_image'])
+        final pdfUrl = controller.resolveFileUrl(fileSource);
+        final coverSource =
+            (fiksi['cover_url'] ?? fiksi['cover_path'] ?? fiksi['cover_image'])
             ?.toString();
-        final coverUrl = controller.resolveFileUrl(coverPath);
+        final coverUrl = controller.resolveFileUrl(coverSource);
         Get.toNamed(
           AppRoutes.materialDetail,
           arguments: {

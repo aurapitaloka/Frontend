@@ -46,7 +46,9 @@ class RakBukuController extends GetxController {
     }
 
     if (entry.containsKey('judul') ||
+        entry.containsKey('cover_url') ||
         entry.containsKey('cover_path') ||
+        entry.containsKey('file_url') ||
         entry.containsKey('file_path')) {
       return entry;
     }
@@ -98,10 +100,12 @@ class RakBukuController extends GetxController {
 
     final title = found['judul']?.toString() ?? 'Materi';
     final subtitle = found['level']?['nama']?.toString() ?? '';
-    final coverPath = found['cover_path']?.toString();
-    final cover = ApiConfig.resolveStorageUrl(coverPath) ?? '';
-    final filePath = found['file_path']?.toString();
-    final pdfUrl = ApiConfig.resolveStorageUrl(filePath);
+    final coverSource =
+        found['cover_url']?.toString() ?? found['cover_path']?.toString();
+    final cover = ApiConfig.resolveStorageUrl(coverSource) ?? '';
+    final fileSource =
+        found['file_url']?.toString() ?? found['file_path']?.toString();
+    final pdfUrl = ApiConfig.resolveStorageUrl(fileSource);
 
     Get.toNamed(
       AppRoutes.materialDetail,

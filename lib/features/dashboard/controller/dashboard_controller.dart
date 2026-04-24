@@ -168,10 +168,11 @@ class DashboardController extends GetxController {
     }
 
     final kontenTeks = found['konten_teks']?.toString();
-    final filePath = found['file_path']?.toString();
-    final pdfUrl = resolveFileUrl(filePath);
-    final coverPath = found['cover_path']?.toString();
-    final coverUrl = resolveFileUrl(coverPath);
+    final fileUrl = found['file_url']?.toString() ?? found['file_path']?.toString();
+    final pdfUrl = resolveFileUrl(fileUrl);
+    final coverSource =
+        found['cover_url']?.toString() ?? found['cover_path']?.toString();
+    final coverUrl = resolveFileUrl(coverSource);
     final title = found['judul']?.toString() ?? 'Materi';
     final semester = found['semester']?.toString() ?? '';
 
