@@ -23,6 +23,12 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
         'selanjutnya': controller.nextPage,
         'kembali': controller.previousPage,
         'sebelumnya': controller.previousPage,
+        'bacakan halaman': controller.readCurrentPageAloud,
+        'baca halaman': controller.readCurrentPageAloud,
+        'bacakan teks': controller.readCurrentPageAloud,
+        'baca teks': controller.readCurrentPageAloud,
+        'stop baca': controller.stopReadingPage,
+        'hentikan bacaan': controller.stopReadingPage,
         'tambah ke perpustakaan': () {
           if (!controller.inRak.value) {
             controller.toggleRak();
@@ -56,8 +62,36 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
         child: Scaffold(
           backgroundColor: Colors.transparent,
           appBar: AppBar(
-            backgroundColor: Colors.transparent,
+            backgroundColor: const Color(0xFFFFF9F1),
+            surfaceTintColor: Colors.transparent,
             elevation: 0,
+            centerTitle: true,
+            title: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  controller.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textBlack,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                if (controller.subtitle.isNotEmpty)
+                  Text(
+                    controller.subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.grey[700],
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+              ],
+            ),
             leading: IconButton(
               icon: const Icon(
                 Icons.arrow_back_ios_new_rounded,
@@ -86,17 +120,17 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
                   ),
                 ),
               Obx(
-                () => IconButton(
-                  onPressed: controller.toggleVoice,
-                  icon: Icon(
-                    Icons.volume_up_rounded,
-                    color: controller.voiceEnabled.value
-                        ? AppColors.orange
-                        : Colors.grey,
+                  () => IconButton(
+                    onPressed: controller.toggleVoice,
+                    icon: Icon(
+                      Icons.volume_up_rounded,
+                      color: controller.voiceEnabled.value
+                          ? AppColors.orange
+                          : Colors.grey,
+                    ),
+                    tooltip: 'Suara aktif otomatis',
                   ),
-                  tooltip: 'Suara',
                 ),
-              ),
               const SizedBox(width: 6),
             ],
           ),
@@ -244,6 +278,8 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
         children: [
           Expanded(child: _buildReaderCard(_buildPdfViewer())),
           const SizedBox(height: 12),
+          _buildReadAloudActions(),
+          const SizedBox(height: 12),
           _buildProgressBar(),
           const SizedBox(height: 12),
           _buildQuizCta(),
@@ -316,13 +352,21 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
                 final pageInset = controller.isFiksi ? 48.0 : 36.0;
                 final innerWidth = constraints.maxWidth - pageInset;
                 final innerHeight = constraints.maxHeight - pageInset;
-                final pages = _paginateText(
-                  controller.body,
-                  textStyle,
-                  innerWidth,
-                  innerHeight,
-                );
-                controller.updateTotalPages(pages.length);
+                final freezePages =
+                    controller.quizCtaUnlocked.value &&
+                    controller.textPages.isNotEmpty;
+                final pages = freezePages
+                    ? controller.textPages.toList()
+                    : _paginateText(
+                        controller.body,
+                        textStyle,
+                        innerWidth,
+                        innerHeight,
+                      );
+                if (!freezePages) {
+                  controller.updateTotalPages(pages.length);
+                  controller.setTextPages(pages);
+                }
 
                 return PageFlipWidget(
                   key: ValueKey(
@@ -352,6 +396,8 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
             ),
           ),
         ),
+        const SizedBox(height: 12),
+        _buildReadAloudActions(),
         const SizedBox(height: 12),
         _buildProgressBar(),
         const SizedBox(height: 12),
@@ -589,6 +635,123 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
             ),
           ),
         ],
+      );
+    });
+  }
+
+  Widget _buildReadAloudActions() {
+    return Obx(() {
+      final isBusy = controller.isProcessingOcr.value;
+      final isReading = controller.isReadingPage.value;
+      final hasPdf = controller.pdfUrl != null && controller.pdfUrl!.isNotEmpty;
+
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.record_voice_over_rounded,
+                  color: AppColors.orange,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    hasPdf
+                        ? 'Bacakan halaman ${controller.lastSessionPage.value}'
+                        : 'Bacakan materi teks',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textBlack,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              hasPdf
+                  ? 'Aplikasi akan merender halaman PDF, menjalankan OCR, lalu membacakannya.'
+                  : 'Aplikasi akan membacakan halaman teks yang sedang terbuka.',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[700],
+                height: 1.35,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 44,
+                    child: ElevatedButton.icon(
+                      onPressed: hasPdf
+                          ? (isBusy ? null : controller.readCurrentPageAloud)
+                          : controller.readCurrentPageAloud,
+                      icon: isBusy
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.play_arrow_rounded),
+                      label: Text(
+                        isBusy
+                            ? 'Memproses...'
+                            : hasPdf
+                            ? 'Bacakan Halaman'
+                            : 'Bacakan Teks',
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.orange,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                SizedBox(
+                  height: 44,
+                  child: OutlinedButton.icon(
+                    onPressed: isReading ? controller.stopReadingPage : null,
+                    icon: const Icon(Icons.stop_rounded),
+                    label: const Text('Stop'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.orange,
+                      side: const BorderSide(color: AppColors.orange),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       );
     });
   }

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/services/aac_service.dart';
 import '../../../core/services/aac_tts_service.dart';
-import '../../../core/utils/api_config.dart';
 
 class AacController extends GetxController {
   final RxList<Map<String, dynamic>> items = <Map<String, dynamic>>[].obs;
@@ -84,7 +83,9 @@ class AacController extends GetxController {
   }
 
   String? resolveImageUrl(String? path) {
-    return ApiConfig.resolveStorageUrl(path);
+    if (path == null || path.isEmpty) return null;
+    if (path.startsWith('http')) return path;
+    return null;
   }
 
   List<Map<String, dynamic>>? _extractList(Map<String, dynamic> response) {

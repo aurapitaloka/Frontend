@@ -47,6 +47,11 @@ class VoiceCommandController extends GetxController {
     }
   }
 
+  Future<void> enableContinuousListening() async {
+    autoListen.value = true;
+    await startListening();
+  }
+
   Future<void> startListening() async {
     final mic = await Permission.microphone.request();
     if (!mic.isGranted) {
@@ -99,18 +104,77 @@ class VoiceCommandController extends GetxController {
     isListening.value = false;
   }
 
+  Future<void> pauseListening() async {
+    await _speech.stop();
+    isListening.value = false;
+  }
+
   void _handleCommand(String text) {
     if (text.isEmpty) return;
+    final normalized = _canonicalizeCommand(_normalizeCommand(text));
+
     for (final entry in _activeCommands.entries) {
-      if (_matches(text, entry.key)) {
+      final key = _canonicalizeCommand(_normalizeCommand(entry.key));
+      if (key.isNotEmpty && normalized == key) {
         entry.value();
-        break;
+        return;
+      }
+    }
+
+    final sortedEntries = _activeCommands.entries.toList()
+      ..sort((a, b) {
+        final aKey = _canonicalizeCommand(_normalizeCommand(a.key));
+        final bKey = _canonicalizeCommand(_normalizeCommand(b.key));
+        final wordCompare = _wordCount(bKey).compareTo(_wordCount(aKey));
+        if (wordCompare != 0) return wordCompare;
+        return bKey.length.compareTo(aKey.length);
+      });
+
+    for (final entry in sortedEntries) {
+      if (_matches(normalized, entry.key)) {
+        entry.value();
+        return;
       }
     }
   }
 
   bool _matches(String text, String key) {
-    final k = key.toLowerCase().trim();
-    return text.contains(k);
+    final k = _canonicalizeCommand(_normalizeCommand(key));
+    if (k.isEmpty || k.length == 1) return false;
+    final escaped = RegExp.escape(k);
+    return RegExp('(^| )$escaped( |\$)').hasMatch(text);
+  }
+
+  String _normalizeCommand(String text) {
+    final lowered = text.toLowerCase().trim();
+    final cleaned = lowered.replaceAll(RegExp(r'[^a-z0-9 ]'), ' ');
+    return cleaned.replaceAll(RegExp(r'\s+'), ' ').trim();
+  }
+
+  String _canonicalizeCommand(String text) {
+    if (text.isEmpty) return text;
+
+    final tokenAliases = <String, String>{
+      'eh': 'a',
+      'ha': 'a',
+      'be': 'b',
+      'bi': 'b',
+      'ce': 'c',
+      'si': 'c',
+      'de': 'd',
+      'di': 'd',
+    };
+
+    final words = text.split(' ');
+    final canonicalWords = words
+        .map((word) => tokenAliases[word] ?? word)
+        .toList(growable: false);
+
+    return canonicalWords.join(' ').trim();
+  }
+
+  int _wordCount(String text) {
+    if (text.isEmpty) return 0;
+    return text.split(' ').where((word) => word.isNotEmpty).length;
   }
 }

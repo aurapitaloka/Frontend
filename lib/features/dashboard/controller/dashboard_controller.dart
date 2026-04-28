@@ -168,11 +168,8 @@ class DashboardController extends GetxController {
     }
 
     final kontenTeks = found['konten_teks']?.toString();
-    final fileUrl = found['file_url']?.toString() ?? found['file_path']?.toString();
-    final pdfUrl = resolveFileUrl(fileUrl);
-    final coverSource =
-        found['cover_url']?.toString() ?? found['cover_path']?.toString();
-    final coverUrl = resolveFileUrl(coverSource);
+    final pdfUrl = resolveFileUrl(found['file_url']?.toString());
+    final coverUrl = resolveFileUrl(found['cover_url']?.toString());
     final title = found['judul']?.toString() ?? 'Materi';
     final semester = found['semester']?.toString() ?? '';
 
@@ -213,6 +210,12 @@ class DashboardController extends GetxController {
     final args = Get.arguments;
     if (args is Map && args['showGuide'] == true) {
       showGuideOnLoad.value = true;
+    }
+    if (args is Map) {
+      final initialIndex = _parseInt(args['initialIndex']);
+      if (initialIndex != null && initialIndex >= 0 && initialIndex <= 3) {
+        selectedIndex.value = initialIndex;
+      }
     }
     selectedLevelId.value = -1;
     selectedLevelName.value = 'Semua';
@@ -277,7 +280,9 @@ class DashboardController extends GetxController {
   }
 
   String? resolveFileUrl(String? filePath) {
-    return ApiConfig.resolveStorageUrl(filePath);
+    if (filePath == null || filePath.isEmpty) return null;
+    if (filePath.startsWith('http')) return filePath;
+    return null;
   }
 
   Future<void> fetchLevels() async {

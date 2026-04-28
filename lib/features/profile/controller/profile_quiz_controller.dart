@@ -1,5 +1,9 @@
 import 'package:get/get.dart';
+import 'package:permission_handler/permission_handler.dart';
+import '../../../core/controllers/voice_command_controller.dart';
 import '../../../core/services/quiz_service.dart';
+import '../../../core/services/voice_guide_service.dart';
+import '../../../routes/app_routes.dart';
 
 class ProfileQuizController extends GetxController {
   final RxBool isLoading = false.obs;
@@ -9,11 +13,30 @@ class ProfileQuizController extends GetxController {
   final RxList<Map<String, dynamic>> riwayatKuis = <Map<String, dynamic>>[].obs;
   final RxMap<String, dynamic> progressMap = <String, dynamic>{}.obs;
   final RxList<int> completedMateriIds = <int>[].obs;
+  final RxBool voiceEnabled = false.obs;
+  final VoiceCommandController voiceCommandController =
+      Get.find<VoiceCommandController>();
 
   @override
   void onInit() {
     super.onInit();
     fetchKuis();
+  }
+
+  @override
+  void onReady() {
+    super.onReady();
+    Future.microtask(enableVoiceOnOpen);
+  }
+
+  @override
+  void onClose() {
+    VoiceGuideService.instance.stop();
+    if (voiceEnabled.value) {
+      voiceCommandController.stopListening();
+      voiceEnabled.value = false;
+    }
+    super.onClose();
   }
 
   Future<void> fetchKuis() async {
@@ -93,5 +116,200 @@ class ProfileQuizController extends GetxController {
     } catch (_) {
       riwayatKuis.clear();
     }
+  }
+
+  Future<void> enableVoiceOnOpen() async {
+    if (!voiceEnabled.value) {
+      final res = await Permission.microphone.request();
+      if (!res.isGranted) return;
+      voiceEnabled.value = true;
+    }
+    if (voiceCommandController.isListening.value) {
+      await voiceCommandController.stopListening();
+    }
+    if (kuisUmum.isNotEmpty || kuisMateri.isNotEmpty) {
+      await VoiceGuideService.instance.speak(
+        'Menu kuis terbuka. Ucapkan buka kuis lalu nama kuis, '
+        'atau ucapkan buka soal latihan 1 untuk membuka kuis pertama.',
+      );
+    }
+    await voiceCommandController.startListening();
+  }
+
+  Future<void> openQuizFromVoice(String spoken) async {
+    final target = _findQuizFromVoice(spoken);
+    if (target == null) {
+      await VoiceGuideService.instance.speak(
+        'Kuis yang diminta belum saya temukan. Coba ucapkan judul kuis atau nomor urutnya.',
+      );
+      return;
+    }
+
+    final item = target['item'] as Map<String, dynamic>;
+    final isMateri = target['isMateri'] == true;
+    final args = <String, dynamic>{
+      'kuis_id': quizIdOf(item),
+      'is_completed': isCompletedItem(item),
+      'score': scoreTextOf(item),
+      'voice_start': true,
+    };
+    if (isMateri) {
+      args['materi_id'] = materiIdOf(item);
+    }
+
+    await VoiceGuideService.instance.stop();
+    await Get.toNamed(AppRoutes.profileQuizDetail, arguments: args);
+    await fetchKuis();
+  }
+
+  Map<String, dynamic>? _findQuizFromVoice(String spoken) {
+    final normalized = normalize(spoken);
+    if (normalized.isEmpty) return null;
+
+    final numbered = RegExp(r'(?:nomor|ke|latihan)\s*(\d+)').firstMatch(
+      normalized,
+    );
+    if (numbered != null) {
+      final index = int.tryParse(numbered.group(1) ?? '');
+      if (index != null && index > 0) {
+        final all = [
+          ...kuisUmum.map((item) => {'item': item, 'isMateri': false}),
+          ...kuisMateri.map((item) => {'item': item, 'isMateri': true}),
+        ];
+        if (index <= all.length) return all[index - 1];
+      }
+    }
+
+    for (final item in kuisUmum) {
+      final title = normalize(quizTitleOf(item, fallback: ''));
+      if (title.isNotEmpty &&
+          (normalized.contains(title) || title.contains(normalized))) {
+        return {'item': item, 'isMateri': false};
+      }
+    }
+    for (final item in kuisMateri) {
+      final title = normalize(quizTitleOf(item, fallback: ''));
+      if (title.isNotEmpty &&
+          (normalized.contains(title) || title.contains(normalized))) {
+        return {'item': item, 'isMateri': true};
+      }
+    }
+    return null;
+  }
+
+  int quizIdOf(Map<String, dynamic> item) {
+    final nested = item['kuis'];
+    final raw =
+        item['id'] ??
+        item['kuis_id'] ??
+        item['quiz_id'] ??
+        (nested is Map ? nested['id'] ?? nested['kuis_id'] : null);
+    return int.tryParse(raw?.toString() ?? '') ?? 0;
+  }
+
+  int materiIdOf(Map<String, dynamic> item) {
+    final nested = item['materi'];
+    final raw =
+        item['materi_id'] ??
+        (nested is Map ? nested['id'] ?? nested['materi_id'] : null);
+    return int.tryParse(raw?.toString() ?? '') ?? 0;
+  }
+
+  String quizTitleOf(Map<String, dynamic> item, {required String fallback}) {
+    final nested = item['kuis'];
+    final raw =
+        item['judul'] ??
+        item['title'] ??
+        item['kuis_judul'] ??
+        (nested is Map ? nested['judul'] ?? nested['title'] : null);
+    final title = raw?.toString() ?? '';
+    return title.isNotEmpty ? title : fallback;
+  }
+
+  bool isCompletedItem(Map<String, dynamic> item) {
+    if (_historyForQuiz(item) != null) return true;
+    final score = _scoreValue(item);
+    return item['is_completed'] == true ||
+        item['completed'] == true ||
+        item['sudah_dikerjakan'] == true ||
+        item['has_submitted'] == true ||
+        item['hasil_id'] != null ||
+        score != null;
+  }
+
+  String statusTextOf(Map<String, dynamic> item) {
+    if (isCompletedItem(item)) return 'Selesai';
+    return (item['status_aktif'] == false) ? 'Nonaktif' : 'Mulai';
+  }
+
+  String scoreTextOf(Map<String, dynamic> item) {
+    final history = _historyForQuiz(item);
+    if (history != null) return _historyScoreText(history);
+    final score = _scoreValue(item);
+    return score == null ? '-' : score.toStringAsFixed(score % 1 == 0 ? 0 : 1);
+  }
+
+  double? _scoreValue(Map<String, dynamic> item) {
+    final raw =
+        item['skor'] ??
+        item['nilai'] ??
+        item['score'] ??
+        item['best_score'] ??
+        item['skor_terbaik'] ??
+        item['nilai_terbaik'];
+    return double.tryParse(raw?.toString() ?? '');
+  }
+
+  Map<String, dynamic>? _historyForQuiz(Map<String, dynamic> item) {
+    final quizId = quizIdOf(item);
+    final title = normalize(quizTitleOf(item, fallback: ''));
+    for (final history in riwayatKuis) {
+      final historyQuizId = _historyQuizId(history);
+      final historyTitle = normalize(_historyTitle(history));
+      if (quizId > 0 && historyQuizId == quizId) return history;
+      if (title.isNotEmpty && title == historyTitle) return history;
+    }
+    return null;
+  }
+
+  int _historyQuizId(Map<String, dynamic> item) {
+    final nested = item['kuis'];
+    final raw =
+        item['kuis_id'] ??
+        item['quiz_id'] ??
+        item['id_kuis'] ??
+        (nested is Map ? nested['id'] ?? nested['kuis_id'] : null);
+    return int.tryParse(raw?.toString() ?? '') ?? 0;
+  }
+
+  String _historyTitle(Map<String, dynamic> item) {
+    final nested = item['kuis'];
+    final raw =
+        item['kuis_judul'] ??
+        item['judul'] ??
+        item['title'] ??
+        (nested is Map ? nested['judul'] ?? nested['title'] : null);
+    final title = raw?.toString() ?? '';
+    return title.isNotEmpty ? title : 'Kuis';
+  }
+
+  double? _historyScore(Map<String, dynamic> item) {
+    final raw =
+        item['skor'] ??
+        item['nilai'] ??
+        item['score'] ??
+        item['best_score'] ??
+        item['skor_terbaik'] ??
+        item['nilai_terbaik'];
+    return double.tryParse(raw?.toString() ?? '');
+  }
+
+  String _historyScoreText(Map<String, dynamic> item) {
+    final score = _historyScore(item);
+    return score == null ? '-' : score.toStringAsFixed(score % 1 == 0 ? 0 : 1);
+  }
+
+  String normalize(String value) {
+    return value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
   }
 }

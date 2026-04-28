@@ -1,10 +1,13 @@
 import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:page_flip/page_flip.dart';
 import '../../../routes/app_routes.dart';
+import '../../../core/services/pdf_page_ocr_service.dart';
 import '../../../core/services/rak_buku_service.dart';
 import '../../../core/services/sesi_baca_service.dart';
+import '../../../core/services/voice_guide_service.dart';
 import '../../../core/controllers/voice_command_controller.dart';
 import '../../rak_buku/controller/rak_buku_controller.dart';
 
@@ -30,8 +33,12 @@ class MaterialDetailController extends GetxController {
   final RxBool inRak = false.obs;
   final RxBool gazeEnabled = false.obs;
   final RxBool voiceEnabled = false.obs;
+  final RxBool isReadingPage = false.obs;
+  final RxBool isProcessingOcr = false.obs;
   final RxBool showQuizCta = false.obs;
+  final RxBool quizCtaUnlocked = false.obs;
   final RxBool isLastPageLoaded = false.obs;
+  final RxList<String> textPages = <String>[].obs;
   final VoiceCommandController voiceCommandController =
       Get.find<VoiceCommandController>();
 
@@ -95,6 +102,7 @@ class MaterialDetailController extends GetxController {
       readerStartPage = lastSessionPage.value;
       isLastPageLoaded.value = true;
     });
+    Future.microtask(enableVoiceOnOpen);
   }
 
   // ===============================
@@ -122,6 +130,21 @@ class MaterialDetailController extends GetxController {
 
   void updateTotalPages(int totalPages) {
     _totalPages = totalPages;
+    Future.microtask(_refreshQuizCtaFromCurrentState);
+  }
+
+  void setTextPages(List<String> pages) {
+    if (textPages.length == pages.length) {
+      var unchanged = true;
+      for (var i = 0; i < pages.length; i++) {
+        if (textPages[i] != pages[i]) {
+          unchanged = false;
+          break;
+        }
+      }
+      if (unchanged) return;
+    }
+    textPages.assignAll(pages);
   }
 
   Future<void> _loadLastPage() async {
@@ -136,6 +159,15 @@ class MaterialDetailController extends GetxController {
   // ===============================
   void toggleRak() {
     _toggleRakStatus();
+  }
+
+  Future<void> enableVoiceOnOpen() async {
+    if (voiceEnabled.value) return;
+    final res = await Permission.microphone.request();
+    if (res.isGranted) {
+      voiceEnabled.value = true;
+      await voiceCommandController.startListening();
+    }
   }
 
   Future<void> toggleGaze() async {
@@ -165,6 +197,11 @@ class MaterialDetailController extends GetxController {
   // ===============================
   @override
   void onClose() {
+    stopReadingPage();
+    if (voiceEnabled.value) {
+      voiceCommandController.stopListening();
+      voiceEnabled.value = false;
+    }
     clearPdfPageControls();
     super.onClose();
   }
@@ -196,6 +233,71 @@ class MaterialDetailController extends GetxController {
       return;
     }
     textFlipController.previousPage();
+  }
+
+  Future<void> readCurrentPageAloud() async {
+    final url = pdfUrl;
+    if (url == null || url.isEmpty) {
+      final pageIndex = (lastSessionPage.value - 1).clamp(
+        0,
+        textPages.isEmpty ? 0 : textPages.length - 1,
+      );
+      final textPage = textPages.isEmpty ? '' : textPages[pageIndex].trim();
+      if (textPage.isEmpty) {
+        Get.snackbar(
+          'Teks tidak tersedia',
+          'Halaman materi teks belum siap dibacakan.',
+        );
+        return;
+      }
+      isReadingPage.value = true;
+      try {
+        await VoiceGuideService.instance.speak(textPage);
+      } finally {
+        isReadingPage.value = false;
+      }
+      return;
+    }
+    if (isProcessingOcr.value) return;
+
+    isProcessingOcr.value = true;
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw Exception('Gagal mengunduh PDF (${response.statusCode})');
+      }
+
+      final extractedText = await PdfPageOcrService.instance
+          .extractTextFromPdfPage(
+            pdfBytes: response.bodyBytes,
+            pageNumber: lastSessionPage.value,
+          );
+
+      if (extractedText.isEmpty) {
+        Get.snackbar(
+          'Teks tidak ditemukan',
+          'Halaman ini belum berhasil dibaca OCR. Coba halaman lain atau pastikan scan cukup jelas.',
+        );
+        return;
+      }
+
+      isReadingPage.value = true;
+      await VoiceGuideService.instance.speak(extractedText);
+      isReadingPage.value = false;
+    } catch (e) {
+      isReadingPage.value = false;
+      Get.snackbar(
+        'OCR gagal',
+        'Tidak bisa membacakan halaman ini: $e',
+      );
+    } finally {
+      isProcessingOcr.value = false;
+    }
+  }
+
+  Future<void> stopReadingPage() async {
+    isReadingPage.value = false;
+    await VoiceGuideService.instance.stop();
   }
 
   Future<void> _loadRakStatus() async {
@@ -265,10 +367,31 @@ class MaterialDetailController extends GetxController {
     await _updateQuizCta(persen);
   }
 
+  Future<void> _refreshQuizCtaFromCurrentState() async {
+    if (materiId == null) return;
+    if (_totalPages <= 0) {
+      showQuizCta.value = false;
+      return;
+    }
+
+    final currentPage = lastSessionPage.value.clamp(1, _totalPages);
+    if (currentPage != lastSessionPage.value) {
+      lastSessionPage.value = currentPage;
+      await saveLastPage(currentPage);
+    }
+
+    final persen = ((currentPage / _totalPages) * 100).round();
+    await _updateQuizCta(persen);
+  }
+
   int get totalPages => _totalPages;
 
   Future<void> _updateQuizCta(int persen) async {
     if (materiId == null) return;
+    if (quizCtaUnlocked.value) {
+      showQuizCta.value = _isOnLastPage;
+      return;
+    }
     if (persen < 100) {
       showQuizCta.value = false;
       return;
@@ -282,7 +405,13 @@ class MaterialDetailController extends GetxController {
         await prefs.setBool(_quizPromptKey!, true);
       }
     }
-    showQuizCta.value = true;
+    quizCtaUnlocked.value = true;
+    showQuizCta.value = _isOnLastPage;
+  }
+
+  bool get _isOnLastPage {
+    if (_totalPages <= 0) return false;
+    return lastSessionPage.value >= _totalPages;
   }
 
   void goToQuizIntro() {

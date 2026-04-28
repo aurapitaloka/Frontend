@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controller/rak_buku_controller.dart';
 import '../../../core/utils/app_colors.dart';
-import '../../../core/utils/api_config.dart';
 import '../../../core/widgets/primary_header.dart';
 import '../../../core/widgets/voice_command_scope.dart';
 import '../../../core/widgets/voice_command_button.dart';
@@ -103,15 +102,8 @@ class RakBukuView extends GetView<RakBukuController> {
                         final materi = controller.materiFromEntry(entry);
                         final title = materi['judul']?.toString() ?? 'Materi';
                         final subtitle = '${materi['level']?['nama'] ?? ''}';
-                        final coverSource =
-                            materi['cover_url']?.toString() ??
-                            materi['cover_path']?.toString();
-                        final cover =
-                            ApiConfig.resolveStorageUrl(coverSource) ?? '';
-                        final fileSource =
-                            materi['file_url']?.toString() ??
-                            materi['file_path']?.toString();
-                        final pdfUrl = ApiConfig.resolveStorageUrl(fileSource);
+                        final cover = materi['cover_url']?.toString() ?? '';
+                        final pdfUrl = materi['file_url']?.toString();
 
                         return GestureDetector(
                           onTap: () {

@@ -13,6 +13,13 @@ class QuizService {
     return ApiService.get('/dashboard-siswa/materi/$materiId/kuis');
   }
 
+  static Future<Map<String, dynamic>> materiQuizDetail(
+    int materiId,
+    int kuisId,
+  ) async {
+    return ApiService.get('/dashboard-siswa/materi/$materiId/kuis/$kuisId');
+  }
+
   static Future<Map<String, dynamic>> submitByKuisId(
     int kuisId,
     Map<String, dynamic> payload,
@@ -25,6 +32,14 @@ class QuizService {
     Map<String, dynamic> payload,
   ) async {
     return ApiService.post('/dashboard-siswa/materi/$materiId/kuis', payload);
+  }
+
+  static Future<Map<String, dynamic>> submitByMateriAndKuisId(
+    int materiId,
+    int kuisId,
+    Map<String, dynamic> payload,
+  ) async {
+    return ApiService.post('/dashboard-siswa/materi/$materiId/kuis/$kuisId', payload);
   }
 
   static Future<Map<String, dynamic>> history({

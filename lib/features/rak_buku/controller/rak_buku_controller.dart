@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../core/utils/api_config.dart';
 import '../../../routes/app_routes.dart';
 import '../../../core/services/rak_buku_service.dart';
 
@@ -47,9 +46,7 @@ class RakBukuController extends GetxController {
 
     if (entry.containsKey('judul') ||
         entry.containsKey('cover_url') ||
-        entry.containsKey('cover_path') ||
-        entry.containsKey('file_url') ||
-        entry.containsKey('file_path')) {
+        entry.containsKey('file_url')) {
       return entry;
     }
 
@@ -100,12 +97,8 @@ class RakBukuController extends GetxController {
 
     final title = found['judul']?.toString() ?? 'Materi';
     final subtitle = found['level']?['nama']?.toString() ?? '';
-    final coverSource =
-        found['cover_url']?.toString() ?? found['cover_path']?.toString();
-    final cover = ApiConfig.resolveStorageUrl(coverSource) ?? '';
-    final fileSource =
-        found['file_url']?.toString() ?? found['file_path']?.toString();
-    final pdfUrl = ApiConfig.resolveStorageUrl(fileSource);
+    final cover = found['cover_url']?.toString() ?? '';
+    final pdfUrl = found['file_url']?.toString();
 
     Get.toNamed(
       AppRoutes.materialDetail,

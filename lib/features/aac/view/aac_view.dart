@@ -116,8 +116,7 @@ class AacView extends GetView<AacController> {
                               item: item,
                               onTap: () => controller.speakItem(item),
                               imageUrl: controller.resolveImageUrl(
-                                item['gambar_url']?.toString() ??
-                                    item['gambar_path']?.toString(),
+                                item['gambar_url']?.toString(),
                               ),
                             );
                           },

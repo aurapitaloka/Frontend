@@ -18,7 +18,7 @@ class ApiConfig {
 
   static String? resolveStorageUrl(String? path) {
     if (path == null || path.isEmpty) return null;
-    if (path.startsWith('http')) return path;//
-    return '$baseHost/storage/$path';
+    if (path.startsWith('http')) return path;
+    return null;
   }
 }
