@@ -101,7 +101,7 @@ class RakBukuController extends GetxController {
     final pdfUrl = found['file_url']?.toString();
 
     Get.toNamed(
-      AppRoutes.materialDetail,
+      AppRoutes.material,
       arguments: {
         'title': title,
         'subtitle': subtitle,

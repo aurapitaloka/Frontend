@@ -108,7 +108,7 @@ class RakBukuView extends GetView<RakBukuController> {
                         return GestureDetector(
                           onTap: () {
                             Get.toNamed(
-                              AppRoutes.materialDetail,
+                              AppRoutes.material,
                               arguments: {
                                 'title': title,
                                 'subtitle': subtitle,

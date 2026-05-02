@@ -6,8 +6,8 @@ import '../../../routes/app_routes.dart';
 
 class ProfileController extends GetxController {
   // User data
-  final RxString userName = 'Aura'.obs;
-  final RxString userEmail = 'aura@example.com'.obs;
+  final RxString userName = ''.obs;
+  final RxString userEmail = ''.obs;
   final RxString userKelas = ''.obs;
   final RxString profileImageUrl = ''.obs; // Empty = use placeholder
   final RxBool isLoading = false.obs;

@@ -49,6 +49,11 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
             controller.toggleRak();
           }
         },
+        'bab berikutnya': controller.openNextChapter,
+        'bab selanjutnya': controller.openNextChapter,
+        'bab sebelumnya': controller.openPreviousChapter,
+        'mulai kuis': controller.goToQuizIntro,
+        'buka kuis bab': controller.goToQuizIntro,
         'keluarkan dari rak': () {
           if (controller.inRak.value) {
             controller.toggleRak();
@@ -70,7 +75,9 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  controller.title,
+                  controller.showSummaryPage.value
+                      ? controller.summaryTitle
+                      : controller.chapterTitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -81,7 +88,7 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
                 ),
                 if (controller.subtitle.isNotEmpty)
                   Text(
-                    controller.subtitle,
+                    controller.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -119,6 +126,18 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
                     tooltip: 'Rak Buku',
                   ),
                 ),
+              if (controller.hasChapters)
+                Builder(
+                  builder: (scaffoldContext) => IconButton(
+                    onPressed: () =>
+                        Scaffold.of(scaffoldContext).openEndDrawer(),
+                    icon: const Icon(
+                      Icons.menu_open_rounded,
+                      color: AppColors.orange,
+                    ),
+                    tooltip: 'Daftar bab',
+                  ),
+                ),
               Obx(
                   () => IconButton(
                     onPressed: controller.toggleVoice,
@@ -134,11 +153,40 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
               const SizedBox(width: 6),
             ],
           ),
+          endDrawer: controller.hasChapters
+              ? Drawer(
+                  child: SafeArea(
+                    child: _buildChapterNavigator(compact: false),
+                  ),
+                )
+              : null,
           body: SafeArea(
             child: Stack(
               children: [
                 _buildBackground(),
-                Column(children: [Expanded(child: _buildContent())]),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isWide = constraints.maxWidth >= 980;
+                    return Row(
+                      children: [
+                        Expanded(child: _buildContent(isWide: isWide)),
+                        if (isWide && controller.hasChapters)
+                          SizedBox(
+                            width: 320,
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(
+                                0,
+                                16,
+                                20,
+                                24,
+                              ),
+                              child: _buildChapterNavigator(compact: true),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
               ],
             ),
           ),
@@ -253,9 +301,9 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
     return result ?? false;
   }
 
-  Widget _buildContent() {
+  Widget _buildContent({required bool isWide}) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+      padding: EdgeInsets.fromLTRB(20, 12, isWide ? 12 : 20, 24),
       child: _buildMaterialSection(),
     );
   }
@@ -268,6 +316,21 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
         );
       }
 
+      if (controller.showSummaryPage.value) {
+        return SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildReaderCard(_buildSummaryPage()),
+              const SizedBox(height: 12),
+              _buildProgressBar(),
+              const SizedBox(height: 12),
+              _buildCompletionActions(),
+            ],
+          ),
+        );
+      }
+
       final hasPdf = controller.pdfUrl != null && controller.pdfUrl!.isNotEmpty;
       if (!hasPdf) {
         return _buildTextSlides();
@@ -276,13 +339,25 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(child: _buildReaderCard(_buildPdfViewer())),
+          Expanded(flex: 6, child: _buildReaderCard(_buildPdfViewer())),
           const SizedBox(height: 12),
-          _buildReadAloudActions(),
-          const SizedBox(height: 12),
-          _buildProgressBar(),
-          const SizedBox(height: 12),
-          _buildQuizCta(),
+          Flexible(
+            flex: 4,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildReadAloudActions(),
+                  const SizedBox(height: 12),
+                  _buildSummaryEntryCta(),
+                  const SizedBox(height: 12),
+                  _buildProgressBar(),
+                  const SizedBox(height: 12),
+                  _buildCompletionActions(),
+                ],
+              ),
+            ),
+          ),
         ],
       );
     });
@@ -397,11 +472,22 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
           ),
         ),
         const SizedBox(height: 12),
-        _buildReadAloudActions(),
-        const SizedBox(height: 12),
-        _buildProgressBar(),
-        const SizedBox(height: 12),
-        _buildQuizCta(),
+        Flexible(
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildReadAloudActions(),
+                const SizedBox(height: 12),
+                _buildSummaryEntryCta(),
+                const SizedBox(height: 12),
+                _buildProgressBar(),
+                const SizedBox(height: 12),
+                _buildCompletionActions(),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -498,10 +584,22 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
     double maxWidth,
     double maxHeight,
   ) {
-    final cleaned = text.replaceAll('\r\n', '\n').trim();
+    final cleaned = text
+        .replaceAll('\r\n', '\n')
+        .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n')
+        .replaceAll(RegExp(r'</p\s*>', caseSensitive: false), '\n\n')
+        .replaceAll(RegExp(r'<[^>]+>'), ' ')
+        .replaceAll('&nbsp;', ' ')
+        .replaceAll('&amp;', '&')
+        .replaceAll('&quot;', '"')
+        .replaceAll('&#39;', "'")
+        .replaceAll(RegExp(r'[ \t]+'), ' ')
+        .replaceAll(RegExp(r' *\n *'), '\n')
+        .replaceAll(RegExp(r'\n{3,}'), '\n\n')
+        .trim();
     if (cleaned.isEmpty) return [''];
 
-    final paragraphs = cleaned.split('\n\n');
+    final paragraphs = cleaned.split(RegExp(r'\n\s*\n'));
     final pages = <String>[];
     var current = '';
 
@@ -756,9 +854,393 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
     });
   }
 
-  Widget _buildQuizCta() {
+  Widget _buildCompletionActions() {
     return Obx(() {
-      if (!controller.showQuizCta.value) return const SizedBox.shrink();
+      final showQuiz = controller.showQuizCta.value || controller.hasChapterQuiz;
+      final showNextChapter = controller.hasNextChapter;
+      final onSummaryPage = controller.showSummaryPage.value;
+      if ((!showQuiz && !showNextChapter) || !onSummaryPage) {
+        return const SizedBox.shrink();
+      }
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              showNextChapter
+                  ? 'Bab ini selesai dibaca.'
+                  : 'Kamu sudah sampai di akhir bab.',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textBlack,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              showQuiz
+                  ? 'Lanjutkan ke kuis jika tersedia, atau pilih bab lain dari daftar isi.'
+                  : 'Lanjutkan ke bab berikutnya untuk meneruskan materi.',
+              style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+            ),
+            if (showNextChapter) ...[
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                height: 44,
+                child: ElevatedButton.icon(
+                  onPressed: controller.openNextChapter,
+                  icon: const Icon(Icons.menu_book_rounded),
+                  label: const Text('Lanjut ke Bab Berikutnya'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2563EB),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+            if (showQuiz) ...[
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: controller.goToQuizIntro,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.orange,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.quiz_rounded),
+                      const SizedBox(width: 8),
+                      Text(
+                        controller.hasChapterQuiz
+                            ? 'Kerjakan Kuis Bab'
+                            : 'Lanjut ke Kuis Materi',
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
+    });
+  }
+
+  Widget _buildSummaryCard() {
+    return Obx(() {
+      final hasSummary = controller.hasChapterSummary;
+      final canGenerate = controller.canGenerateSummary;
+      final isBusy = controller.isGeneratingSummary.value;
+      if (!hasSummary && !canGenerate) {
+        return const SizedBox.shrink();
+      }
+
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFFFF3E0), Color(0xFFFFF8EF), Color(0xFFE8F4FF)],
+                ),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.95),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(
+                      Icons.auto_awesome_rounded,
+                      color: AppColors.orange,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Ringkas dan Mudah Diingat',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.orange,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          controller.summaryTitle,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.textBlack,
+                            height: 1.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (hasSummary) ...[
+              if (controller.summaryShort.isNotEmpty)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    controller.summaryShort,
+                    style: TextStyle(
+                      fontSize: 12,
+                      height: 1.5,
+                      color: Colors.grey[800],
+                    ),
+                  ),
+                ),
+              if (controller.summaryKeyPoints.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                const Text(
+                  'Inti Bab Ini',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.textBlack,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                ...List.generate(controller.summaryKeyPoints.length, (index) {
+                  final point = controller.summaryKeyPoints[index];
+                  final pointStyle = _summaryPointStyle(point, index);
+                  final accent = pointStyle.$1;
+                  final icon = pointStyle.$2;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: accent.withOpacity(0.10),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: accent.withOpacity(0.30)),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: accent,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            alignment: Alignment.center,
+                            child: Icon(
+                              icon,
+                              size: 18,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              point,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                height: 1.45,
+                                color: AppColors.textBlack,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+              ],
+              if (controller.summaryMemoryTip.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                _summaryInfoBox(
+                  title: 'Tips mengingat',
+                  body: controller.summaryMemoryTip,
+                  backgroundColor: const Color(0xFFFFF3E0),
+                  icon: Icons.psychology_alt_rounded,
+                ),
+              ],
+              if (controller.summaryExample.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                _summaryInfoBox(
+                  title: 'Contoh sederhana',
+                  body: controller.summaryExample,
+                  backgroundColor: const Color(0xFFE8F5E9),
+                  icon: Icons.lightbulb_rounded,
+                ),
+              ],
+              if (controller.summaryKeywords.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                const Text(
+                  'Kata Kunci',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.textBlack,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: controller.summaryKeywords
+                      .map(
+                        (keyword) => Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                AppColors.orange.withOpacity(0.14),
+                                AppColors.yellow.withOpacity(0.22),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            keyword,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.orange,
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ],
+            ] else ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                ),
+                child: Text(
+                  'Rangkuman AI untuk bab ini belum tersedia. Kamu bisa membuatnya dulu sebelum lanjut ke kuis.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.45,
+                    color: Colors.grey[700],
+                  ),
+                ),
+              ),
+            ],
+            if (canGenerate) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                height: 42,
+                child: OutlinedButton.icon(
+                  onPressed: isBusy ? null : controller.generateChapterSummary,
+                  icon: isBusy
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.auto_awesome_rounded),
+                  label: Text(
+                    isBusy
+                        ? 'Membuat rangkuman...'
+                        : hasSummary
+                        ? 'Perbarui Rangkuman'
+                        : 'Generate Rangkuman',
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.orange,
+                    side: const BorderSide(color: AppColors.orange),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
+    });
+  }
+
+  Widget _buildSummaryEntryCta() {
+    return Obx(() {
+      final isAtEnd =
+          controller.totalPages > 0 &&
+          controller.lastSessionPage.value == controller.totalPages;
+      final shouldShow =
+          controller.hasSummaryFlow && isAtEnd && !controller.showSummaryPage.value;
+      if (!shouldShow) return const SizedBox.shrink();
+
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.all(14),
@@ -777,24 +1259,32 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Kamu sudah selesai materi ini!',
+              'Isi bab sudah selesai.',
               style: TextStyle(
                 fontSize: 14,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w800,
                 color: AppColors.textBlack,
               ),
             ),
             const SizedBox(height: 6),
             Text(
-              'Yuk lanjut uji pemahamanmu di kuis.',
-              style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+              controller.hasChapterSummary
+                  ? 'Lanjut ke halaman rangkuman untuk melihat inti bab ini.'
+                  : 'Buka halaman rangkuman untuk membuat dan melihat ringkasan bab ini.',
+              style: TextStyle(
+                fontSize: 12,
+                height: 1.45,
+                color: Colors.grey[700],
+              ),
             ),
             const SizedBox(height: 10),
             SizedBox(
               width: double.infinity,
-              height: 44,
-              child: ElevatedButton(
-                onPressed: controller.goToQuizIntro,
+              height: 42,
+              child: ElevatedButton.icon(
+                onPressed: () => controller.showSummaryPage.value = true,
+                icon: const Icon(Icons.auto_awesome_rounded),
+                label: const Text('Buka Halaman Rangkuman'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.orange,
                   foregroundColor: Colors.white,
@@ -802,13 +1292,391 @@ class MaterialDetailView extends GetView<MaterialDetailController> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text('Lanjut ke Kuis'),
               ),
             ),
           ],
         ),
       );
     });
+  }
+
+  Widget _buildSummaryPage() {
+    return Container(
+      width: double.infinity,
+      color: Colors.white,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFFFFF3E0),
+                    Color(0xFFFFF8EF),
+                    Color(0xFFE8F4FF),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Stack(
+                children: [
+                  Positioned(
+                    right: -8,
+                    top: -6,
+                    child: Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFD54F).withOpacity(0.20),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    right: 30,
+                    bottom: -10,
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF81D4FA).withOpacity(0.22),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      Container(
+                        width: 58,
+                        height: 58,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.96),
+                          borderRadius: BorderRadius.circular(18),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.auto_awesome_rounded,
+                          color: AppColors.orange,
+                          size: 30,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Halaman Rangkuman',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.orange,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              controller.summaryTitle,
+                              style: const TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w900,
+                                color: AppColors.textBlack,
+                                height: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Yuk lihat inti pelajaran ini dengan cara yang lebih mudah dipahami.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                height: 1.35,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                onPressed: () => controller.showSummaryPage.value = false,
+                icon: const Icon(Icons.menu_book_rounded),
+                label: const Text('Kembali ke Bacaan'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.orange,
+                  side: const BorderSide(color: AppColors.orange),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            _buildSummaryCard(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _summaryInfoBox({
+    required String title,
+    required String body,
+    required Color backgroundColor,
+    required IconData icon,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 16, color: AppColors.orange),
+              const SizedBox(width: 6),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textBlack,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            body,
+            style: const TextStyle(
+              fontSize: 12,
+              height: 1.45,
+              color: AppColors.textBlack,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  (Color, IconData) _summaryPointStyle(String point, int index) {
+    final text = point.toLowerCase();
+
+    if (text.contains('ingat') ||
+        text.contains('menghafal') ||
+        text.contains('memori')) {
+      return (const Color(0xFFFFB74D), Icons.psychology_alt_rounded);
+    }
+
+    if (text.contains('contoh') || text.contains('misalnya')) {
+      return (const Color(0xFF4FC3F7), Icons.lightbulb_rounded);
+    }
+
+    if (text.contains('budaya') ||
+        text.contains('tradisi') ||
+        text.contains('adat')) {
+      return (const Color(0xFFFF8A65), Icons.celebration_rounded);
+    }
+
+    if (text.contains('hewan') ||
+        text.contains('kancil') ||
+        text.contains('hutan')) {
+      return (const Color(0xFF81C784), Icons.pets_rounded);
+    }
+
+    if (text.contains('baik') ||
+        text.contains('tolong') ||
+        text.contains('peduli') ||
+        text.contains('teman')) {
+      return (const Color(0xFFE57373), Icons.favorite_rounded);
+    }
+
+    if (text.contains('aturan') ||
+        text.contains('harus') ||
+        text.contains('jangan') ||
+        text.contains('langkah')) {
+      return (const Color(0xFF9575CD), Icons.rule_rounded);
+    }
+
+    final accents = <Color>[
+      const Color(0xFFFF8A65),
+      const Color(0xFF4FC3F7),
+      const Color(0xFF81C784),
+      const Color(0xFFFFD54F),
+    ];
+    final icons = <IconData>[
+      Icons.star_rounded,
+      Icons.lightbulb_rounded,
+      Icons.favorite_rounded,
+      Icons.flag_rounded,
+    ];
+    return (accents[index % accents.length], icons[index % icons.length]);
+  }
+
+  Widget _buildChapterNavigator({required bool compact}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.96),
+        borderRadius: BorderRadius.circular(compact ? 22 : 0),
+        boxShadow: compact
+            ? [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 14,
+                  offset: const Offset(0, 6),
+                ),
+              ]
+            : null,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Daftar Bab',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.textBlack,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  controller.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[700],
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemCount: controller.chapterList.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 10),
+              itemBuilder: (context, index) {
+                final chapter = controller.chapterList[index];
+                final selected = index == controller.currentChapterIndex;
+                final chapterTitle =
+                    chapter['judul_bab']?.toString() ??
+                    chapter['judul']?.toString() ??
+                    'Bab ${index + 1}';
+                final hasQuiz =
+                    chapter['kuis'] != null ||
+                    chapter['kuis_id'] != null ||
+                    chapter['quiz_id'] != null ||
+                    (chapter['kuis_list'] is List &&
+                        (chapter['kuis_list'] as List).isNotEmpty);
+
+                return InkWell(
+                  onTap: () async {
+                    if (!compact) {
+                      Navigator.of(context).maybePop();
+                    }
+                    await controller.openChapterAt(index);
+                  },
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? AppColors.orange.withOpacity(0.10)
+                          : const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: selected
+                            ? AppColors.orange
+                            : const Color(0xFFE5E7EB),
+                        width: selected ? 1.5 : 1,
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: selected ? AppColors.orange : Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            '${index + 1}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              color: selected ? Colors.white : AppColors.orange,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                chapterTitle,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.textBlack,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                hasQuiz ? 'Ada kuis' : 'Bab bacaan',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey[700],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

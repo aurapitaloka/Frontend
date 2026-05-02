@@ -155,12 +155,17 @@ class VoiceCommandController extends GetxController {
     if (text.isEmpty) return text;
 
     final tokenAliases = <String, String>{
+      'e': 'a',
       'eh': 'a',
+      'ae': 'a',
       'ha': 'a',
+      'bee': 'b',
       'be': 'b',
       'bi': 'b',
+      'ci': 'c',
       'ce': 'c',
       'si': 'c',
+      'the': 'd',
       'de': 'd',
       'di': 'd',
     };

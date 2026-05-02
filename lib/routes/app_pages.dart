@@ -24,6 +24,8 @@ import '../features/profile/binding/profile_quiz_history_binding.dart';
 import '../features/profile/binding/profile_quiz_history_detail_binding.dart';
 import '../features/material_detail/view/material_detail_view.dart';
 import '../features/material_detail/binding/material_detail_binding.dart';
+import '../features/material_book/view/material_book_view.dart';
+import '../features/material_book/binding/material_book_binding.dart';
 import '../features/webview/view/feature_webview.dart';
 import '../features/aac/binding/aac_binding.dart';
 import '../features/aac/view/aac_view.dart';
@@ -93,8 +95,8 @@ class AppPages {
     ),
     GetPage(
       name: AppRoutes.material,
-      page: () => const MaterialDetailView(),
-      binding: MaterialDetailBinding(),
+      page: () => const MaterialBookView(),
+      binding: MaterialBookBinding(),
     ),
     GetPage(
       name: AppRoutes.materialDetail,

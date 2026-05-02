@@ -10,6 +10,8 @@ class PdfPageOcrService {
   PdfPageOcrService._();
 
   static final PdfPageOcrService instance = PdfPageOcrService._();
+  static const int _minimumUsefulTextLength = 220;
+  static const int _minimumUsefulLineCount = 8;
 
   final TextRecognizer _recognizer = TextRecognizer(
     script: TextRecognitionScript.latin,
@@ -27,10 +29,10 @@ class PdfPageOcrService {
       final safePage = pageNumber.clamp(1, document.pagesCount);
       page = await document.getPage(safePage);
 
-      final targetWidth = page.width >= 3200
-          ? 3200.0
-          : page.width < 2400
-          ? 2400.0
+      final targetWidth = page.width >= 2200
+          ? 2200.0
+          : page.width < 1600
+          ? 1600.0
           : page.width;
       final ratio = targetWidth / page.width;
       final targetHeight = page.height * ratio;
@@ -53,51 +55,22 @@ class PdfPageOcrService {
       await fullPageFile.writeAsBytes(rendered.bytes, flush: true);
       tempFiles.add(fullPageFile);
 
-      final extractedSections = <String>[
-        await _extractTextFromImageFile(fullPageFile),
+      final extractedLines = <_OcrLineCandidate>[
+        ...await _extractLineCandidatesFromImageFile(
+          fullPageFile,
+          offsetX: 0,
+          offsetY: 0,
+          scale: 1,
+        ),
       ];
+      final fullPageText = _mergeExtractedText(extractedLines);
+      if (_isUsefulExtraction(fullPageText, extractedLines)) {
+        return fullPageText;
+      }
 
       final decodedImage = img.decodeImage(rendered.bytes);
       if (decodedImage != null) {
-        final cropRanges = <_OcrCropRegion>[
-          const _OcrCropRegion(
-            startYFactor: 0.00,
-            endYFactor: 0.45,
-            startXFactor: 0.00,
-            endXFactor: 1.00,
-            scale: 1.35,
-          ),
-          const _OcrCropRegion(
-            startYFactor: 0.32,
-            endYFactor: 0.78,
-            startXFactor: 0.00,
-            endXFactor: 1.00,
-            scale: 1.45,
-          ),
-          const _OcrCropRegion(
-            startYFactor: 0.55,
-            endYFactor: 1.00,
-            startXFactor: 0.00,
-            endXFactor: 1.00,
-            scale: 1.6,
-          ),
-          const _OcrCropRegion(
-            startYFactor: 0.48,
-            endYFactor: 0.92,
-            startXFactor: 0.10,
-            endXFactor: 0.90,
-            scale: 2.0,
-            highContrast: true,
-          ),
-          const _OcrCropRegion(
-            startYFactor: 0.62,
-            endYFactor: 0.96,
-            startXFactor: 0.12,
-            endXFactor: 0.88,
-            scale: 2.35,
-            highContrast: true,
-          ),
-        ];
+        final cropRanges = _buildCropRegions();
 
         for (var index = 0; index < cropRanges.length; index++) {
           final range = cropRanges[index];
@@ -139,11 +112,18 @@ class PdfPageOcrService {
           );
           await cropFile.writeAsBytes(img.encodePng(prepared), flush: true);
           tempFiles.add(cropFile);
-          extractedSections.add(await _extractTextFromImageFile(cropFile));
+          extractedLines.addAll(
+            await _extractLineCandidatesFromImageFile(
+              cropFile,
+              offsetX: startX.toDouble(),
+              offsetY: startY.toDouble(),
+              scale: range.scale,
+            ),
+          );
         }
       }
 
-      return _mergeExtractedText(extractedSections);
+      return _mergeExtractedText(extractedLines);
     } finally {
       if (page != null && !page.isClosed) {
         await page.close();
@@ -159,10 +139,20 @@ class PdfPageOcrService {
     }
   }
 
-  Future<String> _extractTextFromImageFile(File imageFile) async {
+  Future<List<_OcrLineCandidate>> _extractLineCandidatesFromImageFile(
+    File imageFile, {
+    required double offsetX,
+    required double offsetY,
+    required double scale,
+  }) async {
     final inputImage = InputImage.fromFilePath(imageFile.path);
     final result = await _recognizer.processImage(inputImage);
-    return _buildTextFromRecognized(result);
+    return _buildLineCandidates(
+      result,
+      offsetX: offsetX,
+      offsetY: offsetY,
+      scale: scale,
+    );
   }
 
   img.Image _prepareImageForOcr(
@@ -220,30 +210,188 @@ class PdfPageOcrService {
     return lines.join('\n').trim();
   }
 
-  String _mergeExtractedText(List<String> sections) {
-    final mergedLines = <String>[];
-    final seen = <String>{};
+  List<_OcrCropRegion> _buildCropRegions() {
+    return const <_OcrCropRegion>[
+      _OcrCropRegion(
+        startYFactor: 0.18,
+        endYFactor: 0.86,
+        startXFactor: 0.10,
+        endXFactor: 0.90,
+        scale: 1.35,
+      ),
+      _OcrCropRegion(
+        startYFactor: 0.42,
+        endYFactor: 0.84,
+        startXFactor: 0.10,
+        endXFactor: 0.90,
+        scale: 1.75,
+      ),
+      _OcrCropRegion(
+        startYFactor: 0.52,
+        endYFactor: 0.90,
+        startXFactor: 0.14,
+        endXFactor: 0.86,
+        scale: 2.0,
+        highContrast: true,
+      ),
+    ];
+  }
 
-    for (final section in sections) {
-      for (final rawLine in section.split('\n')) {
-        final line = rawLine.trim();
-        if (line.isEmpty) continue;
+  bool _isUsefulExtraction(String text, List<_OcrLineCandidate> lines) {
+    final normalized = text.trim();
+    if (normalized.isEmpty) return false;
 
-        final normalized = line
-            .toLowerCase()
-            .replaceAll(RegExp(r'\s+'), ' ')
-            .replaceAll(RegExp(r'[^a-z0-9 ]'), '');
+    final uniqueLongLines = lines
+        .map((item) => item.text.trim())
+        .where((item) => item.length >= 18)
+        .toSet()
+        .length;
 
-        if (normalized.isEmpty || seen.contains(normalized)) {
-          continue;
-        }
+    if (normalized.length >= _minimumUsefulTextLength &&
+        uniqueLongLines >= _minimumUsefulLineCount) {
+      return true;
+    }
 
-        seen.add(normalized);
-        mergedLines.add(line);
+    return normalized.length >= 320 && uniqueLongLines >= 5;
+  }
+
+  List<_OcrLineCandidate> _buildLineCandidates(
+    RecognizedText result, {
+    required double offsetX,
+    required double offsetY,
+    required double scale,
+  }) {
+    final candidates = <_OcrLineCandidate>[];
+    final orderedBlocks = [...result.blocks]
+      ..sort((a, b) {
+        final topCompare = a.boundingBox.top.compareTo(b.boundingBox.top);
+        if (topCompare != 0) return topCompare;
+        return a.boundingBox.left.compareTo(b.boundingBox.left);
+      });
+
+    for (final block in orderedBlocks) {
+      final orderedLines = [...block.lines]
+        ..sort((a, b) {
+          final topCompare = a.boundingBox.top.compareTo(b.boundingBox.top);
+          if (topCompare != 0) return topCompare;
+          return a.boundingBox.left.compareTo(b.boundingBox.left);
+        });
+
+      for (final line in orderedLines) {
+        final text = _normalizeRecognizedLine(line.text);
+        if (text.isEmpty) continue;
+
+        final box = line.boundingBox;
+        candidates.add(
+          _OcrLineCandidate(
+            text: text,
+            normalized: _normalizeForCompare(text),
+            top: offsetY + (box.top / scale),
+            left: offsetX + (box.left / scale),
+            bottom: offsetY + (box.bottom / scale),
+            right: offsetX + (box.right / scale),
+          ),
+        );
       }
     }
 
-    return mergedLines.join('\n').trim();
+    if (candidates.isEmpty) {
+      final fallbackText = _buildTextFromRecognized(result);
+      if (fallbackText.isNotEmpty) {
+        for (final rawLine in fallbackText.split('\n')) {
+          final text = _normalizeRecognizedLine(rawLine);
+          if (text.isEmpty) continue;
+          candidates.add(
+            _OcrLineCandidate(
+              text: text,
+              normalized: _normalizeForCompare(text),
+              top: offsetY,
+              left: offsetX,
+              bottom: offsetY,
+              right: offsetX,
+            ),
+          );
+        }
+      }
+    }
+
+    return candidates;
+  }
+
+  String _mergeExtractedText(List<_OcrLineCandidate> lines) {
+    if (lines.isEmpty) return '';
+
+    final sorted = [...lines]
+      ..sort((a, b) {
+        final topDiff = (a.top - b.top).abs();
+        if (topDiff > 10) {
+          return a.top.compareTo(b.top);
+        }
+        final leftDiff = (a.left - b.left).abs();
+        if (leftDiff > 6) {
+          return a.left.compareTo(b.left);
+        }
+        return b.area.compareTo(a.area);
+      });
+
+    final merged = <_OcrLineCandidate>[];
+    for (final candidate in sorted) {
+      if (candidate.normalized.isEmpty) continue;
+      final duplicate = merged.any((existing) {
+        if (existing.normalized != candidate.normalized) return false;
+        final verticalClose = (existing.top - candidate.top).abs() < 22;
+        final horizontalClose = (existing.left - candidate.left).abs() < 28;
+        return verticalClose && horizontalClose;
+      });
+      if (!duplicate) {
+        merged.add(candidate);
+      }
+    }
+
+    merged.sort((a, b) {
+      final topDiff = (a.top - b.top).abs();
+      if (topDiff > 10) {
+        return a.top.compareTo(b.top);
+      }
+      return a.left.compareTo(b.left);
+    });
+
+    final buffer = StringBuffer();
+    _OcrLineCandidate? previous;
+
+    for (final line in merged) {
+      if (previous != null) {
+        final verticalGap = line.top - previous.bottom;
+        final isNewParagraph = verticalGap > 26;
+        final sameRow = (line.top - previous.top).abs() < 10;
+        if (sameRow) {
+          buffer.write(' ');
+        } else if (isNewParagraph) {
+          buffer.write('\n\n');
+        } else {
+          buffer.write('\n');
+        }
+      }
+      buffer.write(line.text);
+      previous = line;
+    }
+
+    return buffer.toString().trim();
+  }
+
+  String _normalizeRecognizedLine(String text) {
+    return text
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .replaceAll('|', 'I')
+        .trim();
+  }
+
+  String _normalizeForCompare(String text) {
+    return text
+        .toLowerCase()
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .replaceAll(RegExp(r'[^a-z0-9 ]'), '')
+        .trim();
   }
 
   Future<void> close() async {
@@ -267,4 +415,24 @@ class _OcrCropRegion {
   final double endXFactor;
   final double scale;
   final bool highContrast;
+}
+
+class _OcrLineCandidate {
+  const _OcrLineCandidate({
+    required this.text,
+    required this.normalized,
+    required this.top,
+    required this.left,
+    required this.bottom,
+    required this.right,
+  });
+
+  final String text;
+  final String normalized;
+  final double top;
+  final double left;
+  final double bottom;
+  final double right;
+
+  double get area => (right - left).abs() * (bottom - top).abs();
 }

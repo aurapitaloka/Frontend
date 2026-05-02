@@ -116,7 +116,21 @@ class ProfileView extends GetView<ProfileController> {
                         ],
                       ),
                       child: Obx(
-                        () => Row(
+                        () {
+                          final displayName =
+                              controller.isLoading.value &&
+                                  controller.userName.value.trim().isEmpty
+                              ? 'Memuat profil...'
+                              : controller.userName.value.trim().isEmpty
+                              ? 'Nama belum tersedia'
+                              : controller.userName.value;
+                          final displayEmail =
+                              controller.isLoading.value &&
+                                  controller.userEmail.value.trim().isEmpty
+                              ? 'Memuat email...'
+                              : controller.userEmail.value.trim();
+
+                          return Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Stack(
@@ -218,7 +232,7 @@ class ProfileView extends GetView<ProfileController> {
                                   ),
                                   const SizedBox(height: 9),
                                   Text(
-                                    controller.userName.value,
+                                    displayName,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(
@@ -229,18 +243,20 @@ class ProfileView extends GetView<ProfileController> {
                                       fontFamily: 'Roboto',
                                     ),
                                   ),
-                                  const SizedBox(height: 5),
-                                  Text(
-                                    controller.userEmail.value,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.grey[600],
-                                      fontFamily: 'Roboto',
-                                      fontWeight: FontWeight.w500,
+                                  if (displayEmail.isNotEmpty) ...[
+                                    const SizedBox(height: 5),
+                                    Text(
+                                      displayEmail,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.grey[600],
+                                        fontFamily: 'Roboto',
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
-                                  ),
+                                  ],
                                   if (controller.isLoading.value)
                                     const Padding(
                                       padding: EdgeInsets.only(top: 8),
@@ -283,7 +299,8 @@ class ProfileView extends GetView<ProfileController> {
                               ),
                             ),
                           ],
-                        ),
+                        );
+                        },
                       ),
                     ),
                   ),

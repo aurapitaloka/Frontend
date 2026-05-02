@@ -19,6 +19,7 @@ class ProfileQuizDetailController extends GetxController {
       'Ucapkan mulai untuk memulai kuis berbasis suara.'.obs;
 
   final RxMap<int, int> jawaban = <int, int>{}.obs;
+  final RxMap<String, String> selectedOptionKeys = <String, String>{}.obs;
   final RxMap<int, String> jawabanTeks = <int, String>{}.obs;
   final VoiceCommandController voiceCommandController =
       Get.find<VoiceCommandController>();
@@ -128,6 +129,10 @@ class ProfileQuizDetailController extends GetxController {
     jawaban[pertanyaanId] = opsiId;
   }
 
+  void setSelectedOptionKey(String questionKey, String selectionKey) {
+    selectedOptionKeys[questionKey] = selectionKey;
+  }
+
   void setJawabanTeks(int pertanyaanId, String text) {
     jawabanTeks[pertanyaanId] = text;
   }
@@ -205,14 +210,13 @@ class ProfileQuizDetailController extends GetxController {
             as List?;
     final options = (rawOptions?.cast<Map<String, dynamic>>() ?? const [])
         .where((option) {
-          final label = option['label']?.toString().toLowerCase().trim() ?? '';
-          return const {'a', 'b', 'c', 'd'}.contains(label);
+          return _normalizeOptionLabel(option['label']) != null;
         })
         .toList();
 
     final optionTexts = options
         .map((option) {
-          final label = option['label']?.toString().toUpperCase() ?? '';
+          final label = _normalizeOptionLabel(option['label'])?.toUpperCase() ?? '';
           final content =
               (option['teks'] ?? option['text'] ?? option['jawaban'])
                   ?.toString() ??
@@ -233,7 +237,9 @@ class ProfileQuizDetailController extends GetxController {
   }
 
   bool hasAnswer(Map<String, dynamic> question) {
-    final id = int.tryParse(question['id']?.toString() ?? '') ?? 0;
+    final id = _questionIdOf(question);
+    final stateKey = _questionStateKeyOf(question);
+    if (selectedOptionKeys.containsKey(stateKey)) return true;
     if (id == 0) return false;
     final text = jawabanTeks[id]?.trim() ?? '';
     return jawaban.containsKey(id) || text.isNotEmpty;
@@ -262,24 +268,29 @@ class ProfileQuizDetailController extends GetxController {
 
     final index = currentQuestionIndex.value.clamp(0, list.length - 1);
     final question = list[index];
-    final questionId = int.tryParse(question['id']?.toString() ?? '') ?? 0;
-    if (questionId == 0) return;
+    final questionId = _questionIdOf(question);
+    final questionStateKey = _questionStateKeyOf(question, fallbackIndex: index);
 
     final rawOptions =
         (question['opsi'] ?? question['opsi_jawaban'] ?? question['options'])
             as List?;
     final options = (rawOptions?.cast<Map<String, dynamic>>() ?? const [])
         .where((option) {
-          final optionLabel =
-              option['label']?.toString().toLowerCase().trim() ?? '';
-          return const {'a', 'b', 'c', 'd'}.contains(optionLabel);
+          return _normalizeOptionLabel(option['label']) != null;
         })
         .toList();
-    final target = label.toLowerCase().trim();
+    final target = _normalizeAnswerLabel(label);
+    if (target == null) {
+      await _speakWithVoicePause(
+        'Jawaban $label belum dikenali.',
+        resumeListening: true,
+      );
+      return;
+    }
 
     Map<String, dynamic>? selected;
     for (final option in options) {
-      final optionLabel = option['label']?.toString().toLowerCase().trim();
+      final optionLabel = _normalizeOptionLabel(option['label']);
       if (optionLabel == target) {
         selected = option;
         break;
@@ -293,9 +304,14 @@ class ProfileQuizDetailController extends GetxController {
       return;
     }
 
-    final optionId = int.tryParse(selected['id']?.toString() ?? '') ?? 0;
-    if (optionId == 0) return;
-    setJawaban(questionId, optionId);
+    final optionId = _optionIdOf(selected);
+    final selectionKey = _optionSelectionKey(selected);
+    if (selectionKey.isNotEmpty) {
+      setSelectedOptionKey(questionStateKey, selectionKey);
+    }
+    if (optionId != 0) {
+      setJawaban(questionId, optionId);
+    }
 
     final answerText =
         (selected['teks'] ?? selected['text'] ?? selected['jawaban'])
@@ -375,5 +391,102 @@ class ProfileQuizDetailController extends GetxController {
       await Future.delayed(const Duration(milliseconds: 450));
       await voiceCommandController.enableContinuousListening();
     }
+  }
+
+  String? _normalizeOptionLabel(dynamic value) {
+    final text = value?.toString().toLowerCase().trim() ?? '';
+    if (text.isEmpty) return null;
+    final cleaned = text.replaceAll(RegExp(r'[^a-z0-9]'), '');
+    if (cleaned.isEmpty) return null;
+    final first = cleaned[0];
+    return const {'a', 'b', 'c', 'd'}.contains(first) ? first : null;
+  }
+
+  String? _normalizeAnswerLabel(String value) {
+    final text = value.toLowerCase().trim();
+    const aliases = <String, String>{
+      'a': 'a',
+      'e': 'a',
+      'eh': 'a',
+      'ae': 'a',
+      'ha': 'a',
+      'b': 'b',
+      'be': 'b',
+      'bee': 'b',
+      'bi': 'b',
+      'c': 'c',
+      'ce': 'c',
+      'ci': 'c',
+      'si': 'c',
+      'd': 'd',
+      'de': 'd',
+      'di': 'd',
+      'the': 'd',
+    };
+    final cleaned = text.replaceAll(RegExp(r'[^a-z]'), '');
+    return aliases[cleaned];
+  }
+
+  int _questionIdOf(Map<String, dynamic> question) {
+    final candidates = <dynamic>[
+      question['id'],
+      question['pertanyaan_id'],
+      question['question_id'],
+      question['soal_id'],
+    ];
+    for (final candidate in candidates) {
+      final parsed = int.tryParse(candidate?.toString() ?? '');
+      if (parsed != null && parsed > 0) return parsed;
+    }
+    return 0;
+  }
+
+  int _optionIdOf(Map<String, dynamic> option) {
+    final candidates = <dynamic>[
+      option['id'],
+      option['opsi_id'],
+      option['option_id'],
+      option['pilihan_id'],
+      option['jawaban_id'],
+    ];
+    for (final candidate in candidates) {
+      final parsed = int.tryParse(candidate?.toString() ?? '');
+      if (parsed != null && parsed > 0) return parsed;
+    }
+    return 0;
+  }
+
+  String _optionSelectionKey(Map<String, dynamic> option) {
+    final optionId = _optionIdOf(option);
+    if (optionId > 0) return 'id:$optionId';
+
+    final label = _normalizeOptionLabel(option['label']) ?? '';
+    final text =
+        (option['teks'] ?? option['text'] ?? option['jawaban'] ?? '')
+            .toString()
+            .trim()
+            .toLowerCase();
+    return 'label:$label|text:$text';
+  }
+
+  String _questionStateKeyOf(
+    Map<String, dynamic> question, {
+    int? fallbackIndex,
+  }) {
+    final questionId = _questionIdOf(question);
+    if (questionId > 0) return 'id:$questionId';
+
+    final text =
+        (question['pertanyaan'] ??
+                question['teks'] ??
+                question['question'] ??
+                question['soal'] ??
+                '')
+            .toString()
+            .trim()
+            .toLowerCase();
+    if (text.isNotEmpty) return 'text:$text';
+    if (fallbackIndex != null) return 'index:$fallbackIndex';
+    return 'question:${question.hashCode}';
   }
 }

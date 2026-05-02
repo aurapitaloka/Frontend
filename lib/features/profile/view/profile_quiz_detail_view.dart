@@ -85,10 +85,16 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
       'soal nomor': () => _goToQuestionFromVoice(),
       'nomor': () => _goToQuestionFromVoice(),
       'a': () => controller.answerCurrentByLabelVoice('a'),
+      'e': () => controller.answerCurrentByLabelVoice('a'),
+      'eh': () => controller.answerCurrentByLabelVoice('a'),
       'b': () => controller.answerCurrentByLabelVoice('b'),
+      'be': () => controller.answerCurrentByLabelVoice('b'),
       'c': () => controller.answerCurrentByLabelVoice('c'),
+      'ce': () => controller.answerCurrentByLabelVoice('c'),
       'd': () => controller.answerCurrentByLabelVoice('d'),
+      'de': () => controller.answerCurrentByLabelVoice('d'),
       'jawab a': () => controller.answerCurrentByLabelVoice('a'),
+      'jawab e': () => controller.answerCurrentByLabelVoice('a'),
       'jawab b': () => controller.answerCurrentByLabelVoice('b'),
       'jawab c': () => controller.answerCurrentByLabelVoice('c'),
       'jawab d': () => controller.answerCurrentByLabelVoice('d'),
@@ -425,6 +431,7 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
     return Obx(() {
       controller.jawaban.length;
       controller.jawabanTeks.length;
+      controller.selectedOptionKeys.length;
 
       return LayoutBuilder(
         builder: (context, constraints) {
@@ -535,7 +542,8 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
     int total, {
     required bool compact,
   }) {
-    final id = int.tryParse(q['id']?.toString() ?? '') ?? 0;
+    final id = _questionIdOf(q);
+    final questionStateKey = _questionStateKeyOf(q, fallbackIndex: number - 1);
     final teks =
         (q['pertanyaan'] ?? q['teks'] ?? q['question'] ?? q['soal'])
             ?.toString() ??
@@ -642,7 +650,12 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
                     const SizedBox(height: 8),
                   ],
                   if (tipe == 'pilihan' || tipe == 'listening')
-                    _optionsGrid(opsi, id, compact: compact)
+                    _optionsGrid(
+                      opsi,
+                      id,
+                      questionStateKey: questionStateKey,
+                      compact: compact,
+                    )
                   else
                     TextField(
                       minLines: 4,
@@ -669,6 +682,7 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
   Widget _optionsGrid(
     List<Map<String, dynamic>> options,
     int questionId, {
+    required String questionStateKey,
     required bool compact,
   }) {
     if (options.isEmpty) {
@@ -680,36 +694,51 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
         final isLast = option == options.last;
         return Padding(
           padding: EdgeInsets.only(bottom: isLast ? 0 : gap),
-          child: _optionTile(option, questionId, compact: compact),
+          child: _optionTile(
+            option,
+            questionId,
+            questionStateKey: questionStateKey,
+            compact: compact,
+          ),
         );
       }).toList(),
     );
   }
 
   List<Map<String, dynamic>> _visibleOptions(List<Map<String, dynamic>> options) {
-    const allowedLabels = {'a', 'b', 'c', 'd'};
     return options.where((option) {
-      final label = option['label']?.toString().toLowerCase().trim() ?? '';
-      return allowedLabels.contains(label);
+      return _normalizedOptionLabel(option['label']) != null;
     }).toList();
   }
 
   Widget _optionTile(
     Map<String, dynamic> option,
     int questionId, {
+    required String questionStateKey,
     required bool compact,
   }) {
-    final opsiId = int.tryParse(option['id']?.toString() ?? '') ?? 0;
-    final label = option['label']?.toString() ?? '';
+    final opsiId = _optionIdOf(option);
+    final selectionKey = _optionSelectionKey(option);
+    final label =
+        _normalizedOptionLabel(option['label'])?.toUpperCase() ??
+        option['label']?.toString() ??
+        '';
     final text =
         (option['teks'] ?? option['text'] ?? option['jawaban'])?.toString() ??
         '';
 
     return Obx(() {
-      final selected = controller.jawaban[questionId] == opsiId;
+      final selected =
+          (opsiId > 0 && controller.jawaban[questionId] == opsiId) ||
+          controller.selectedOptionKeys[questionStateKey] == selectionKey;
       return InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () => controller.setJawaban(questionId, opsiId),
+        onTap: () {
+          controller.setSelectedOptionKey(questionStateKey, selectionKey);
+          if (opsiId > 0) {
+            controller.setJawaban(questionId, opsiId);
+          }
+        },
         child: Container(
           padding: EdgeInsets.symmetric(
             horizontal: compact ? 10 : 12,
@@ -756,6 +785,78 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
         ),
       );
     });
+  }
+
+  String? _normalizedOptionLabel(dynamic value) {
+    final text = value?.toString().toLowerCase().trim() ?? '';
+    if (text.isEmpty) return null;
+    final cleaned = text.replaceAll(RegExp(r'[^a-z0-9]'), '');
+    if (cleaned.isEmpty) return null;
+    final first = cleaned[0];
+    return const {'a', 'b', 'c', 'd'}.contains(first) ? first : null;
+  }
+
+  int _questionIdOf(Map<String, dynamic> question) {
+    final candidates = <dynamic>[
+      question['id'],
+      question['pertanyaan_id'],
+      question['question_id'],
+      question['soal_id'],
+    ];
+    for (final candidate in candidates) {
+      final parsed = int.tryParse(candidate?.toString() ?? '');
+      if (parsed != null && parsed > 0) return parsed;
+    }
+    return 0;
+  }
+
+  int _optionIdOf(Map<String, dynamic> option) {
+    final candidates = <dynamic>[
+      option['id'],
+      option['opsi_id'],
+      option['option_id'],
+      option['pilihan_id'],
+      option['jawaban_id'],
+    ];
+    for (final candidate in candidates) {
+      final parsed = int.tryParse(candidate?.toString() ?? '');
+      if (parsed != null && parsed > 0) return parsed;
+    }
+    return 0;
+  }
+
+  String _optionSelectionKey(Map<String, dynamic> option) {
+    final opsiId = _optionIdOf(option);
+    if (opsiId > 0) return 'id:$opsiId';
+
+    final label = _normalizedOptionLabel(option['label']) ?? '';
+    final text =
+        (option['teks'] ?? option['text'] ?? option['jawaban'] ?? '')
+            .toString()
+            .trim()
+            .toLowerCase();
+    return 'label:$label|text:$text';
+  }
+
+  String _questionStateKeyOf(
+    Map<String, dynamic> question, {
+    int? fallbackIndex,
+  }) {
+    final questionId = _questionIdOf(question);
+    if (questionId > 0) return 'id:$questionId';
+
+    final text =
+        (question['pertanyaan'] ??
+                question['teks'] ??
+                question['question'] ??
+                question['soal'] ??
+                '')
+            .toString()
+            .trim()
+            .toLowerCase();
+    if (text.isNotEmpty) return 'text:$text';
+    if (fallbackIndex != null) return 'index:$fallbackIndex';
+    return 'question:${question.hashCode}';
   }
 
   Widget _navigationBar({
