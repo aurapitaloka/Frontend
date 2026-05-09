@@ -12,7 +12,7 @@ class ProfileQuizHistoryView extends GetView<ProfileQuizHistoryController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: const Color(0xFFFFF8F3),
       body: SafeArea(
         child: Column(
           children: [
@@ -37,7 +37,7 @@ class ProfileQuizHistoryView extends GetView<ProfileQuizHistoryController> {
                 return RefreshIndicator(
                   onRefresh: controller.fetchHistory,
                   child: ListView.separated(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
                     itemCount: controller.items.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {

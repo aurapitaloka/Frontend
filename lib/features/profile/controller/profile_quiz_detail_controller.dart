@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../core/controllers/voice_command_controller.dart';
@@ -5,6 +7,8 @@ import '../../../core/services/quiz_service.dart';
 import '../../../core/services/voice_guide_service.dart';
 
 class ProfileQuizDetailController extends GetxController {
+  static const String _voiceNoSpeechPrompt =
+      'Jawaban belum terdengar. Silakan ucapkan lagi dengan mengucapkan pilihan A, B, C, atau D.';
   final RxBool isLoading = false.obs;
   final RxBool isSubmitting = false.obs;
   final RxString error = ''.obs;
@@ -15,6 +19,8 @@ class ProfileQuizDetailController extends GetxController {
   final RxBool voiceEnabled = false.obs;
   final RxBool isSpeakingQuestion = false.obs;
   final RxBool showVoiceStartPrompt = false.obs;
+  final RxBool voiceQuizStarted = false.obs;
+  final RxString voiceInteractionStatus = 'Menyiapkan suara...'.obs;
   final RxString voicePromptText =
       'Ucapkan mulai untuk memulai kuis berbasis suara.'.obs;
 
@@ -27,10 +33,14 @@ class ProfileQuizDetailController extends GetxController {
   late final int kuisId;
   late final int materiId;
   late final bool voiceStart;
+  bool _autoVoiceStarted = false;
+  bool _awaitingAnswer = false;
+  bool _isProcessingAnswerVoice = false;
 
   @override
   void onInit() {
     super.onInit();
+    voiceCommandController.pushNoSpeechPrompt(_voiceNoSpeechPrompt);
     kuisId = int.tryParse(Get.arguments?['kuis_id']?.toString() ?? '') ?? 0;
     materiId = int.tryParse(Get.arguments?['materi_id']?.toString() ?? '') ?? 0;
     isCompleted.value = Get.arguments?['is_completed'] == true;
@@ -48,10 +58,8 @@ class ProfileQuizDetailController extends GetxController {
   @override
   void onClose() {
     VoiceGuideService.instance.stop();
-    if (voiceEnabled.value) {
-      voiceCommandController.stopListening();
-      voiceEnabled.value = false;
-    }
+    voiceCommandController.popNoSpeechPrompt(_voiceNoSpeechPrompt);
+    voiceEnabled.value = false;
     super.onClose();
   }
 
@@ -79,7 +87,9 @@ class ProfileQuizDetailController extends GetxController {
         if (detail != null) {
           kuis.assignAll(detail);
           currentQuestionIndex.value = 0;
+          voiceQuizStarted.value = false;
           _showVoicePrompt();
+          unawaited(_maybeAutoStartVoiceFlow());
         } else {
           error.value =
               res['message']?.toString() ?? 'Data kuis tidak ditemukan.';
@@ -89,9 +99,6 @@ class ProfileQuizDetailController extends GetxController {
       error.value = e.toString();
     } finally {
       isLoading.value = false;
-      if (voiceStart && error.value.isEmpty && questions.isNotEmpty) {
-        await speakStartPrompt();
-      }
     }
   }
 
@@ -99,9 +106,10 @@ class ProfileQuizDetailController extends GetxController {
     if (isCompleted.value || questions.isEmpty) return;
     showVoiceStartPrompt.value = true;
     voicePromptText.value =
-        'Ucapkan "mulai" untuk mendengar soal pertama.\n'
+        'Soal akan dibacakan otomatis.\n'
         'Setelah soal dibacakan, ucapkan "A", "B", "C", atau "D" untuk menjawab.\n'
-        'Kalau ingin mendengar lagi, ucapkan "ulangi soal".';
+        'Ucapkan "ulangi soal" untuk mendengar soal lagi.';
+    _setListeningStatus();
   }
 
   Map<String, dynamic>? _extractQuiz(Map<String, dynamic> res) {
@@ -155,7 +163,8 @@ class ProfileQuizDetailController extends GetxController {
     final res = await Permission.microphone.request();
     if (res.isGranted) {
       voiceEnabled.value = true;
-      await voiceCommandController.enableContinuousListening();
+      await voiceCommandController.ensureContinuousListening();
+      unawaited(_maybeAutoStartVoiceFlow());
     }
   }
 
@@ -183,20 +192,25 @@ class ProfileQuizDetailController extends GetxController {
     showVoiceStartPrompt.value = true;
     await _speakWithVoicePause(
       'Mode kuis suara aktif. Ucapkan mulai untuk memulai soal pertama. '
-      'Setelah soal dibacakan, cukup jawab A, B, C, atau D.',
+      'Setelah soal dibacakan, ucapkan A, B, C, atau D.',
       resumeListening: true,
     );
   }
 
   Future<void> startVoiceQuizSession() async {
     if (questions.isEmpty) return;
+    if (isSpeakingQuestion.value) return;
+    voiceQuizStarted.value = true;
     showVoiceStartPrompt.value = false;
+    _awaitingAnswer = false;
+    voiceInteractionStatus.value = 'Memulai sesi kuis suara...';
     await speakCurrentQuestion();
   }
 
   Future<void> speakCurrentQuestion() async {
     final question = currentQuestion;
     if (question == null) return;
+    _awaitingAnswer = false;
 
     final text =
         (question['pertanyaan'] ??
@@ -233,7 +247,13 @@ class ProfileQuizDetailController extends GetxController {
         'Soal $number dari $total. $text. $optionTexts '
         'Silakan jawab dengan ucapkan A, B, C, atau D.';
 
+    voiceQuizStarted.value = true;
+    voiceInteractionStatus.value = 'Membacakan soal...';
     await _speakWithVoicePause(spoken, resumeListening: true);
+    if (!isCompleted.value) {
+      _awaitingAnswer = true;
+      _setListeningStatus();
+    }
   }
 
   bool hasAnswer(Map<String, dynamic> question) {
@@ -246,6 +266,11 @@ class ProfileQuizDetailController extends GetxController {
   }
 
   Future<void> goToQuestionFromVoice(String spoken) async {
+    if (isSpeakingQuestion.value) return;
+    if (!voiceQuizStarted.value) {
+      await _ensureQuizStartedByVoice();
+      return;
+    }
     final list = questions;
     if (list.isEmpty) return;
     final match = RegExp(r'(?:nomor|soal)\s*(\d+)').firstMatch(spoken);
@@ -263,8 +288,22 @@ class ProfileQuizDetailController extends GetxController {
   }
 
   Future<void> answerCurrentByLabelVoice(String label) async {
-    final list = questions;
-    if (list.isEmpty) return;
+    if (_isProcessingAnswerVoice || isSpeakingQuestion.value) return;
+    if (!voiceQuizStarted.value) {
+      await _ensureQuizStartedByVoice();
+      return;
+    }
+    if (!_awaitingAnswer) {
+      return;
+    }
+    _isProcessingAnswerVoice = true;
+    _awaitingAnswer = false;
+    voiceInteractionStatus.value = 'Memproses jawaban...';
+    try {
+      final list = questions;
+      if (list.isEmpty) {
+        return;
+      }
 
     final index = currentQuestionIndex.value.clamp(0, list.length - 1);
     final question = list[index];
@@ -279,70 +318,81 @@ class ProfileQuizDetailController extends GetxController {
           return _normalizeOptionLabel(option['label']) != null;
         })
         .toList();
-    final target = _normalizeAnswerLabel(label);
-    if (target == null) {
-      await _speakWithVoicePause(
-        'Jawaban $label belum dikenali.',
-        resumeListening: true,
-      );
-      return;
-    }
-
-    Map<String, dynamic>? selected;
-    for (final option in options) {
-      final optionLabel = _normalizeOptionLabel(option['label']);
-      if (optionLabel == target) {
-        selected = option;
-        break;
-      }
-    }
-    if (selected == null) {
-      await _speakWithVoicePause(
-        'Pilihan $label tidak tersedia pada soal ini.',
-        resumeListening: true,
-      );
-      return;
-    }
-
-    final optionId = _optionIdOf(selected);
-    final selectionKey = _optionSelectionKey(selected);
-    if (selectionKey.isNotEmpty) {
-      setSelectedOptionKey(questionStateKey, selectionKey);
-    }
-    if (optionId != 0) {
-      setJawaban(questionId, optionId);
-    }
-
-    final answerText =
-        (selected['teks'] ?? selected['text'] ?? selected['jawaban'])
-            ?.toString() ??
-        '';
-    var feedback = 'Jawaban $label dipilih.';
-    if (answerText.isNotEmpty) {
-      feedback += ' $answerText.';
-    }
-
-    final isLast = index >= list.length - 1;
-    if (isLast) {
-      feedback += ' Semua soal selesai. Jawaban akan dikirim.';
-      await _speakWithVoicePause(feedback, resumeListening: false);
-      final res = await submit();
-      if (res != null) {
-        final skor = res['skor']?.toString() ?? '-';
-        final benar = res['total_benar']?.toString() ?? '-';
-        final total = res['total_pertanyaan']?.toString() ?? '-';
+      final target = _normalizeAnswerLabel(label);
+      if (target == null) {
         await _speakWithVoicePause(
-          'Kuis selesai. Nilai kamu $skor. Benar $benar dari $total soal.',
+          'Jawaban $label belum dikenali.',
           resumeListening: true,
         );
+        _awaitingAnswer = true;
+        _setListeningStatus();
+        return;
       }
-      return;
-    }
 
-    feedback += ' Lanjut ke soal berikutnya.';
-    await _speakWithVoicePause(feedback, resumeListening: false);
-    nextQuestion(list.length);
-    await speakCurrentQuestion();
+      Map<String, dynamic>? selected;
+      for (final option in options) {
+        final optionLabel = _normalizeOptionLabel(option['label']);
+        if (optionLabel == target) {
+          selected = option;
+          break;
+        }
+      }
+      if (selected == null) {
+        await _speakWithVoicePause(
+          'Pilihan $label tidak tersedia pada soal ini.',
+          resumeListening: true,
+        );
+        _awaitingAnswer = true;
+        _setListeningStatus();
+        return;
+      }
+
+      final optionId = _optionIdOf(selected);
+      final selectionKey = _optionSelectionKey(selected);
+      if (selectionKey.isNotEmpty) {
+        setSelectedOptionKey(questionStateKey, selectionKey);
+      }
+      if (optionId != 0) {
+        setJawaban(questionId, optionId);
+      }
+
+      final answerText =
+          (selected['teks'] ?? selected['text'] ?? selected['jawaban'])
+              ?.toString() ??
+          '';
+      var feedback = 'Jawaban $label dipilih.';
+      if (answerText.isNotEmpty) {
+        feedback += ' $answerText.';
+      }
+
+      final isLast = index >= list.length - 1;
+      if (isLast) {
+        feedback += ' Semua soal selesai. Jawaban akan dikirim.';
+        await _speakWithVoicePause(feedback, resumeListening: false);
+        final res = await submit();
+        if (res != null) {
+          final skor = res['skor']?.toString() ?? '-';
+          final benar = res['total_benar']?.toString() ?? '-';
+          final total = res['total_pertanyaan']?.toString() ?? '-';
+          await _speakWithVoicePause(
+            'Kuis selesai. Nilai kamu $skor. Benar $benar dari $total soal.',
+            resumeListening: true,
+          );
+        }
+        voiceInteractionStatus.value = 'Kuis selesai.';
+        return;
+      }
+
+      feedback += ' Lanjut ke soal berikutnya.';
+      await _speakWithVoicePause(feedback, resumeListening: false);
+      nextQuestion(list.length);
+      await speakCurrentQuestion();
+    } finally {
+      _isProcessingAnswerVoice = false;
+      if (!isCompleted.value && !isSpeakingQuestion.value && _awaitingAnswer) {
+        _setListeningStatus();
+      }
+    }
   }
 
   Future<Map<String, dynamic>?> submit() async {
@@ -382,15 +432,54 @@ class ProfileQuizDetailController extends GetxController {
     required bool resumeListening,
   }) async {
     isSpeakingQuestion.value = true;
-    if (voiceEnabled.value) {
-      await voiceCommandController.pauseListening();
+    try {
+      if (voiceEnabled.value) {
+        await voiceCommandController.pauseListening();
+      }
+      await VoiceGuideService.instance.speak(text);
+    } catch (_) {
+      // Abaikan error TTS agar alur kuis suara tetap lanjut.
+    } finally {
+      isSpeakingQuestion.value = false;
+      if (resumeListening && voiceEnabled.value && !isCompleted.value) {
+        await Future.delayed(const Duration(milliseconds: 450));
+        await voiceCommandController.ensureContinuousListening();
+        _setListeningStatus();
+      }
     }
-    await VoiceGuideService.instance.speak(text);
-    isSpeakingQuestion.value = false;
-    if (resumeListening && voiceEnabled.value && !isCompleted.value) {
-      await Future.delayed(const Duration(milliseconds: 450));
-      await voiceCommandController.enableContinuousListening();
+  }
+
+  Future<void> _ensureQuizStartedByVoice() async {
+    await _speakWithVoicePause(
+      'Saya akan membacakan soal dulu, lalu kamu bisa jawab A, B, C, atau D.',
+      resumeListening: false,
+    );
+    await startVoiceQuizSession();
+  }
+
+  Future<void> _maybeAutoStartVoiceFlow() async {
+    if (_autoVoiceStarted) return;
+    if (!voiceEnabled.value) return;
+    if (isCompleted.value || questions.isEmpty) return;
+    _autoVoiceStarted = true;
+    await Future.delayed(const Duration(milliseconds: 350));
+    await startVoiceQuizSession();
+  }
+
+  void _setListeningStatus() {
+    if (isCompleted.value) {
+      voiceInteractionStatus.value = 'Kuis selesai.';
+      return;
     }
+    if (isSpeakingQuestion.value) {
+      voiceInteractionStatus.value = 'Membacakan soal...';
+      return;
+    }
+    if (_awaitingAnswer) {
+      voiceInteractionStatus.value = 'Menunggu jawaban (A/B/C/D)...';
+      return;
+    }
+    voiceInteractionStatus.value = 'Mendengarkan perintah...';
   }
 
   String? _normalizeOptionLabel(dynamic value) {

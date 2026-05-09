@@ -6,6 +6,8 @@ import '../../../core/services/voice_guide_service.dart';
 import '../../../routes/app_routes.dart';
 
 class ProfileQuizController extends GetxController {
+  static const String _voiceNoSpeechPrompt =
+      'Saya belum mendengar suara. Coba ulangi nama kuis atau nomor urut kuis.';
   final RxBool isLoading = false.obs;
   final RxString error = ''.obs;
   final RxList<Map<String, dynamic>> kuisUmum = <Map<String, dynamic>>[].obs;
@@ -20,6 +22,7 @@ class ProfileQuizController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    voiceCommandController.pushNoSpeechPrompt(_voiceNoSpeechPrompt);
     fetchKuis();
   }
 
@@ -32,10 +35,8 @@ class ProfileQuizController extends GetxController {
   @override
   void onClose() {
     VoiceGuideService.instance.stop();
-    if (voiceEnabled.value) {
-      voiceCommandController.stopListening();
-      voiceEnabled.value = false;
-    }
+    voiceCommandController.popNoSpeechPrompt(_voiceNoSpeechPrompt);
+    voiceEnabled.value = false;
     super.onClose();
   }
 
@@ -124,16 +125,13 @@ class ProfileQuizController extends GetxController {
       if (!res.isGranted) return;
       voiceEnabled.value = true;
     }
-    if (voiceCommandController.isListening.value) {
-      await voiceCommandController.stopListening();
-    }
     if (kuisUmum.isNotEmpty || kuisMateri.isNotEmpty) {
       await VoiceGuideService.instance.speak(
-        'Menu kuis terbuka. Ucapkan buka kuis lalu nama kuis, '
-        'atau ucapkan buka soal latihan 1 untuk membuka kuis pertama.',
+        'Menu kuis terbuka. Ucapkan nama kuisnya langsung, '
+        'atau ucapkan soal latihan 1 untuk memilih kuis pertama.',
       );
     }
-    await voiceCommandController.startListening();
+    await voiceCommandController.ensureContinuousListening();
   }
 
   Future<void> openQuizFromVoice(String spoken) async {

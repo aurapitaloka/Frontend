@@ -6,6 +6,8 @@ import '../../../core/services/quiz_service.dart';
 import '../../../routes/app_routes.dart';
 
 class MateriQuizIntroController extends GetxController {
+  static const String _voiceNoSpeechPrompt =
+      'Saya belum mendengar suara. Ucapkan mulai kuis atau kembali.';
   final RxBool isLoading = false.obs;
   final RxString error = ''.obs;
   final RxMap<String, dynamic> kuis = <String, dynamic>{}.obs;
@@ -28,6 +30,7 @@ class MateriQuizIntroController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    voiceCommandController.pushNoSpeechPrompt(_voiceNoSpeechPrompt);
     final args = Get.arguments as Map<String, dynamic>? ?? {};
     materiId = int.tryParse(args['materi_id']?.toString() ?? '') ?? 0;
     materiTitle = args['materi_title']?.toString() ?? 'Materi';
@@ -43,10 +46,8 @@ class MateriQuizIntroController extends GetxController {
   @override
   void onClose() {
     VoiceGuideService.instance.stop();
-    if (voiceEnabled.value) {
-      voiceCommandController.stopListening();
-      voiceEnabled.value = false;
-    }
+    voiceCommandController.popNoSpeechPrompt(_voiceNoSpeechPrompt);
+    voiceEnabled.value = false;
     super.onClose();
   }
 
@@ -239,7 +240,7 @@ class MateriQuizIntroController extends GetxController {
     final res = await Permission.microphone.request();
     if (res.isGranted) {
       voiceEnabled.value = true;
-      await voiceCommandController.startListening();
+      await voiceCommandController.ensureContinuousListening();
     }
   }
 

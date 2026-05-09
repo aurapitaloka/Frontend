@@ -11,7 +11,7 @@ class ProfileNotesView extends GetView<ProfileNotesController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: const Color(0xFFFFF8F3),
       body: SafeArea(
         child: Column(
           children: [
@@ -33,7 +33,7 @@ class ProfileNotesView extends GetView<ProfileNotesController> {
                 return RefreshIndicator(
                   onRefresh: controller.fetchNotes,
                   child: ListView(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
                     children: [
                       _infoCard(),
                       const SizedBox(height: 14),

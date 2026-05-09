@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controller/materi_quiz_intro_controller.dart';
 import '../../../core/utils/app_colors.dart';
+import '../../../core/widgets/primary_header.dart';
+import '../../../core/widgets/voice_command_button.dart';
 import '../../../core/widgets/voice_command_scope.dart';
 import '../../../routes/app_routes.dart';
 
@@ -12,6 +14,7 @@ class MateriQuizIntroView extends GetView<MateriQuizIntroController> {
   Widget build(BuildContext context) {
     return VoiceCommandScope(
       commands: {
+        'kuis': controller.startQuiz,
         'mulai kuis': controller.startQuiz,
         'lanjut kuis': controller.startQuiz,
         'buka kuis': controller.startQuiz,
@@ -20,59 +23,85 @@ class MateriQuizIntroView extends GetView<MateriQuizIntroController> {
         'kembali': Get.back,
       },
       child: Scaffold(
-        backgroundColor: Colors.grey[50],
+        backgroundColor: const Color(0xFFFFF8F3),
         body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-            child: Column(
-              children: [
-                _celebrateHeader(),
-                const SizedBox(height: 20),
-                Expanded(
-                  child: Obx(() {
-                    if (controller.isLoading.value) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (controller.error.value.isNotEmpty) {
-                      return _emptyQuizState(controller.error.value);
-                    }
-                    return _quizCard();
-                  }),
-                ),
-                Obx(() {
-                  final disabled =
-                      controller.kuisId == 0 ||
-                      controller.isLoading.value ||
-                      controller.error.value.isNotEmpty;
-                  return SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton(
-                      onPressed: disabled ? null : controller.startQuiz,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.orange,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      child: const Text(
-                        'Lanjut Uji Kemampuan',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
+          child: Column(
+            children: [
+              PrimaryHeader(
+                title: 'Kuis Materi',
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const VoiceCommandButton(size: 36),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      onPressed: Get.back,
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: AppColors.orange,
                       ),
                     ),
-                  );
-                }),
-                const SizedBox(height: 10),
-                TextButton(
-                  onPressed: Get.back,
-                  child: const Text('Kembali ke materi'),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+                  child: Column(
+                    children: [
+                      _celebrateHeader(),
+                      const SizedBox(height: 18),
+                      Expanded(
+                        child: Obx(() {
+                          if (controller.isLoading.value) {
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          }
+                          if (controller.error.value.isNotEmpty) {
+                            return _emptyQuizState(controller.error.value);
+                          }
+                          return _quizCard();
+                        }),
+                      ),
+                      Obx(() {
+                        final disabled =
+                            controller.kuisId == 0 ||
+                            controller.isLoading.value ||
+                            controller.error.value.isNotEmpty;
+                        return SizedBox(
+                          width: double.infinity,
+                          height: 54,
+                          child: ElevatedButton(
+                            onPressed: disabled ? null : controller.startQuiz,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.orange,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: const Text(
+                              'Lanjut Uji Kemampuan',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                      const SizedBox(height: 10),
+                      TextButton(
+                        onPressed: Get.back,
+                        child: const Text('Kembali ke materi'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

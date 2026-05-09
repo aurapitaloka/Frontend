@@ -14,6 +14,8 @@ import '../../../core/controllers/voice_command_controller.dart';
 import '../../rak_buku/controller/rak_buku_controller.dart';
 
 class MaterialDetailController extends GetxController {
+  static const String _voiceNoSpeechPrompt =
+      'Saya belum mendengar perintah. Coba ulangi perintah suara untuk halaman ini.';
   // ===============================
   // DATA MATERI
   // ===============================
@@ -79,6 +81,7 @@ class MaterialDetailController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    voiceCommandController.pushNoSpeechPrompt(_voiceNoSpeechPrompt);
 
     final args = Get.arguments as Map<String, dynamic>? ?? {};
 
@@ -218,7 +221,7 @@ class MaterialDetailController extends GetxController {
     final res = await Permission.microphone.request();
     if (res.isGranted) {
       voiceEnabled.value = true;
-      await voiceCommandController.startListening();
+      await voiceCommandController.ensureContinuousListening();
     }
   }
 
@@ -236,7 +239,7 @@ class MaterialDetailController extends GetxController {
       final res = await Permission.microphone.request();
       if (res.isGranted) {
         voiceEnabled.value = true;
-        await voiceCommandController.startListening();
+        await voiceCommandController.ensureContinuousListening();
       }
     } else {
       voiceEnabled.value = false;
@@ -250,10 +253,8 @@ class MaterialDetailController extends GetxController {
   @override
   void onClose() {
     stopReadingPage();
-    if (voiceEnabled.value) {
-      voiceCommandController.stopListening();
-      voiceEnabled.value = false;
-    }
+    voiceCommandController.popNoSpeechPrompt(_voiceNoSpeechPrompt);
+    voiceEnabled.value = false;
     clearPdfPageControls();
     super.onClose();
   }

@@ -1,6 +1,4 @@
 import 'package:get/get.dart';
-import '../features/splash/view/splash_view.dart';
-import '../features/splash/binding/splash_binding.dart';
 import '../features/auth/view/welcome_view.dart';
 import '../features/auth/view/login_view.dart';
 import '../features/auth/view/register_view.dart';
@@ -37,11 +35,6 @@ import 'app_routes.dart';
 
 class AppPages {
   static final List<GetPage> routes = [
-    GetPage(
-      name: AppRoutes.splash,
-      page: () => const SplashView(),
-      binding: SplashBinding(),
-    ),
     GetPage(name: AppRoutes.welcome, page: () => const WelcomeView()),
     GetPage(
       name: AppRoutes.login,

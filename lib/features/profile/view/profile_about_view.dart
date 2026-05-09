@@ -9,7 +9,7 @@ class ProfileAboutView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: const Color(0xFFFFF8F3),
       body: SafeArea(
         child: Column(
           children: [
@@ -22,7 +22,7 @@ class ProfileAboutView extends StatelessWidget {
             ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
                 children: [
                   _aboutCard(),
                   const SizedBox(height: 16),

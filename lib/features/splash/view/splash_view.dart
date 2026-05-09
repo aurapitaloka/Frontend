@@ -67,50 +67,39 @@ class _SplashViewState extends State<SplashView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFEB3B), // Yellow background
+      backgroundColor: const Color(0xFFFFEB3B),
       body: Center(
-        child: Stack(
-          alignment: Alignment.centerLeft,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // White circle
-            Positioned(
-              left: MediaQuery.of(context).size.width * 0.1,
-              child: Container(
-                width: 200,
-                height: 200,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ),
-            // Text overlay
-            Positioned(
-              left: MediaQuery.of(context).size.width * 0.15,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'Selamat Datang di',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                      fontFamily: 'Roboto',
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Ruma',
-                    style: TextStyle(
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFFFF6B00), // Orange color
-                      fontFamily: 'Roboto',
-                    ),
+            Container(
+              width: 220,
+              height: 220,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 24,
+                    offset: const Offset(0, 10),
                   ),
                 ],
+              ),
+              child: Image.asset(
+                'assets/images/app_logo.png',
+                fit: BoxFit.contain,
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Ruma',
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFFFF6B00),
+                fontFamily: 'Roboto',
               ),
             ),
           ],

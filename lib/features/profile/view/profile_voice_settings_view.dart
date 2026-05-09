@@ -6,10 +6,13 @@ import '../../../core/widgets/primary_header.dart';
 class ProfileVoiceSettingsView extends StatelessWidget {
   const ProfileVoiceSettingsView({super.key});
 
+  static const Color _bgWarm = Color(0xFFFFF8F3);
+  static const Color _borderSoft = Color(0xFFF0E8E0);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: _bgWarm,
       body: SafeArea(
         child: Column(
           children: [
@@ -22,7 +25,7 @@ class ProfileVoiceSettingsView extends StatelessWidget {
             ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
                 children: [
                   _tipCard(),
                   const SizedBox(height: 16),
@@ -60,11 +63,12 @@ class ProfileVoiceSettingsView extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFFFFF8E1), Color(0xFFFFECB3)],
+          colors: [Color(0xFFFFF3E0), Color(0xFFFFF8E8)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _borderSoft),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.06),
@@ -111,7 +115,8 @@ class ProfileVoiceSettingsView extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _borderSoft),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.06),

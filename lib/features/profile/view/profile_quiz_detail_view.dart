@@ -4,12 +4,17 @@ import '../controller/profile_quiz_detail_controller.dart';
 import '../../../core/controllers/voice_command_controller.dart';
 import '../../../core/services/voice_guide_service.dart';
 import '../../../core/utils/app_colors.dart';
-import '../../../core/widgets/primary_header.dart';
 import '../../../core/widgets/voice_command_button.dart';
 import '../../../core/widgets/voice_command_scope.dart';
 
 class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
   const ProfileQuizDetailView({super.key});
+
+  static const Color _bgWarm     = Color(0xFFFFF8F3);
+  static const Color _borderSoft = Color(0xFFF0E8E0);
+  static const Color _textDark   = Color(0xFF1A1A2E);
+  static const Color _textGrey   = Color(0xFF888888);
+  static const Color _surfaceWhite = Colors.white;
 
   @override
   Widget build(BuildContext context) {
@@ -18,31 +23,15 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
       return VoiceCommandScope(
         commands: _voiceCommands(questions),
         child: Scaffold(
-          backgroundColor: Colors.grey[50],
+          backgroundColor: _bgWarm,
           body: SafeArea(
             child: Column(
               children: [
-                PrimaryHeader(
-                  title: 'Detail Kuis',
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const VoiceCommandButton(size: 36),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        onPressed: Get.back,
-                        icon: const Icon(
-                          Icons.close_rounded,
-                          color: AppColors.orange,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                _buildHeader(),
                 Expanded(
                   child: Obx(() {
                     if (controller.isLoading.value) {
-                      return const Center(child: CircularProgressIndicator());
+                      return _buildLoadingState();
                     }
                     if (controller.error.value.isNotEmpty) {
                       return _errorState(controller.error.value);
@@ -53,10 +42,7 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
                     if (questions.isEmpty) {
                       return _errorState('Soal kuis belum tersedia.');
                     }
-                    return _quizPager(
-                      title: controller.kuis['judul']?.toString() ?? 'Kuis',
-                      questions: questions,
-                    );
+                    return _quizPager(questions: questions);
                   }),
                 ),
               ],
@@ -67,6 +53,122 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
     });
   }
 
+  Widget _buildHeader() {
+    return Container(
+      decoration: BoxDecoration(
+        color: _bgWarm,
+        border: Border(
+          bottom: BorderSide(color: _borderSoft, width: 1.5),
+        ),
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 14, 16, 14),
+      child: Row(
+        children: [
+          // Back button
+          GestureDetector(
+            onTap: Get.back,
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: _surfaceWhite,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _borderSoft, width: 1.5),
+              ),
+              child: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: AppColors.orange,
+                size: 18,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+
+          // Icon + Title
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppColors.yellow,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.yellow.withOpacity(0.5),
+                  blurRadius: 0,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.quiz_rounded,
+              color: AppColors.orange,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Detail Kuis',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.orange,
+                    fontFamily: 'Nunito',
+                    height: 1,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'Kerjakan dengan teliti',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: _textGrey,
+                    fontFamily: 'Nunito',
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Voice button
+          _VoicePulseButton(
+            child: VoiceCommandButton(size: 44),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Loading state (konsisten DashboardView) ───────────────────────────────
+  Widget _buildLoadingState() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 60),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(color: AppColors.orange),
+            const SizedBox(height: 16),
+            const Text(
+              'Memuat soal kuis...',
+              style: TextStyle(
+                fontFamily: 'Nunito',
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: _textGrey,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Voice commands (tidak berubah) ────────────────────────────────────────
   Map<String, VoidCallback> _voiceCommands(
     List<Map<String, dynamic>> questions,
   ) {
@@ -85,13 +187,17 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
       'soal nomor': () => _goToQuestionFromVoice(),
       'nomor': () => _goToQuestionFromVoice(),
       'a': () => controller.answerCurrentByLabelVoice('a'),
+      'langsung a': () => controller.answerCurrentByLabelVoice('a'),
       'e': () => controller.answerCurrentByLabelVoice('a'),
       'eh': () => controller.answerCurrentByLabelVoice('a'),
       'b': () => controller.answerCurrentByLabelVoice('b'),
+      'langsung b': () => controller.answerCurrentByLabelVoice('b'),
       'be': () => controller.answerCurrentByLabelVoice('b'),
       'c': () => controller.answerCurrentByLabelVoice('c'),
+      'langsung c': () => controller.answerCurrentByLabelVoice('c'),
       'ce': () => controller.answerCurrentByLabelVoice('c'),
       'd': () => controller.answerCurrentByLabelVoice('d'),
+      'langsung d': () => controller.answerCurrentByLabelVoice('d'),
       'de': () => controller.answerCurrentByLabelVoice('d'),
       'jawab a': () => controller.answerCurrentByLabelVoice('a'),
       'jawab e': () => controller.answerCurrentByLabelVoice('a'),
@@ -103,13 +209,25 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
       'jawaban c': () => controller.answerCurrentByLabelVoice('c'),
       'jawaban d': () => controller.answerCurrentByLabelVoice('d'),
       'pilih a': () => controller.answerCurrentByLabelVoice('a'),
+      'pilihan a': () => controller.answerCurrentByLabelVoice('a'),
+      'huruf a': () => controller.answerCurrentByLabelVoice('a'),
       'pilih b': () => controller.answerCurrentByLabelVoice('b'),
+      'pilihan b': () => controller.answerCurrentByLabelVoice('b'),
+      'huruf b': () => controller.answerCurrentByLabelVoice('b'),
       'pilih c': () => controller.answerCurrentByLabelVoice('c'),
+      'pilihan c': () => controller.answerCurrentByLabelVoice('c'),
+      'huruf c': () => controller.answerCurrentByLabelVoice('c'),
       'pilih d': () => controller.answerCurrentByLabelVoice('d'),
+      'pilihan d': () => controller.answerCurrentByLabelVoice('d'),
+      'huruf d': () => controller.answerCurrentByLabelVoice('d'),
       'opsi a': () => controller.answerCurrentByLabelVoice('a'),
+      'opsi e': () => controller.answerCurrentByLabelVoice('a'),
       'opsi b': () => controller.answerCurrentByLabelVoice('b'),
+      'opsi be': () => controller.answerCurrentByLabelVoice('b'),
       'opsi c': () => controller.answerCurrentByLabelVoice('c'),
+      'opsi ce': () => controller.answerCurrentByLabelVoice('c'),
       'opsi d': () => controller.answerCurrentByLabelVoice('d'),
+      'opsi de': () => controller.answerCurrentByLabelVoice('d'),
       'kirim jawaban': () => _submitVoice(questions),
       'selesai': () => _submitVoice(questions),
       'stop baca': () => VoiceGuideService.instance.stop(),
@@ -122,6 +240,9 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
   }
 
   void _voiceNext(List<Map<String, dynamic>> questions) {
+    if (controller.isSpeakingQuestion.value || controller.isSubmitting.value) {
+      return;
+    }
     if (questions.isEmpty) return;
     final isLast =
         controller.currentQuestionIndex.value >= questions.length - 1;
@@ -132,6 +253,9 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
   }
 
   void _voicePrevious(List<Map<String, dynamic>> questions) {
+    if (controller.isSpeakingQuestion.value || controller.isSubmitting.value) {
+      return;
+    }
     if (questions.isEmpty) return;
     controller.showVoiceStartPrompt.value = false;
     controller.previousQuestion(questions.length);
@@ -139,6 +263,7 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
   }
 
   Future<void> _submitVoice(List<Map<String, dynamic>> questions) async {
+    if (controller.isSpeakingQuestion.value) return;
     if (questions.isEmpty || controller.isSubmitting.value) return;
     final isLast =
         controller.currentQuestionIndex.value >= questions.length - 1;
@@ -151,8 +276,8 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
     if (res != null) _showResult(res);
   }
 
+  // ── Quiz pager ────────────────────────────────────────────────────────────
   Widget _quizPager({
-    required String title,
     required List<Map<String, dynamic>> questions,
   }) {
     return Obx(() {
@@ -167,9 +292,9 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
             padding: EdgeInsets.fromLTRB(16, compact ? 8 : 14, 16, 12),
             child: Column(
               children: [
-                _titleCard(title, index + 1, total, compact: compact),
-                SizedBox(height: compact ? 8 : 10),
                 _questionMap(questions, index, compact: compact),
+                SizedBox(height: compact ? 8 : 10),
+                _voiceStatusBadge(compact: compact),
                 if (controller.showVoiceStartPrompt.value) ...[
                   SizedBox(height: compact ? 8 : 10),
                   _voiceGuideCard(compact: compact),
@@ -198,25 +323,26 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
     });
   }
 
+  // ── Voice guide card ──────────────────────────────────────────────────────
   Widget _voiceGuideCard({required bool compact}) {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 10 : 12,
-        vertical: compact ? 8 : 10,
+        horizontal: compact ? 12 : 14,
+        vertical: compact ? 10 : 12,
       ),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF8E8),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFFFD79A)),
+        color: const Color(0xFFFFF3CD),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFFD166), width: 1.5),
       ),
       child: Row(
         children: [
           Container(
-            width: compact ? 32 : 34,
-            height: compact ? 32 : 34,
+            width: compact ? 34 : 38,
+            height: compact ? 34 : 38,
             decoration: BoxDecoration(
-              color: AppColors.orange.withOpacity(0.14),
+              color: AppColors.orange.withOpacity(0.15),
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(
@@ -234,8 +360,10 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: compact ? 10.5 : 11.5,
-                  height: 1.25,
-                  color: Colors.grey[800],
+                  height: 1.3,
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF514000),
                 ),
               ),
             ),
@@ -251,53 +379,117 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
             ),
             child: const Text(
               'Panduan',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                fontFamily: 'Nunito',
+              ),
             ),
           ),
           const SizedBox(width: 4),
-          ElevatedButton(
-            onPressed: controller.startVoiceQuizSession,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.orange,
-              foregroundColor: Colors.white,
+          GestureDetector(
+            onTap: controller.startVoiceQuizSession,
+            child: Container(
               padding: EdgeInsets.symmetric(
-                horizontal: compact ? 10 : 12,
-                vertical: compact ? 9 : 10,
+                horizontal: compact ? 10 : 14,
+                vertical: compact ? 8 : 10,
               ),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              shape: RoundedRectangleBorder(
+              decoration: BoxDecoration(
+                color: AppColors.orange,
                 borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.orange.withOpacity(0.35),
+                    blurRadius: 0,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
               ),
-            ),
-            child: Text(
-              compact ? 'Mulai' : 'Mulai Bacakan',
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
+              child: Text(
+                compact ? 'Mulai' : 'Mulai Bacakan',
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  fontFamily: 'Nunito',
+                ),
+              ),
             ),
           ),
-          IconButton(
-            onPressed: () => controller.showVoiceStartPrompt.value = false,
-            icon: const Icon(
-              Icons.close_rounded,
-              color: AppColors.orange,
-              size: 18,
+          const SizedBox(width: 4),
+          GestureDetector(
+            onTap: () => controller.showVoiceStartPrompt.value = false,
+            child: Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: AppColors.orange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.close_rounded,
+                color: AppColors.orange,
+                size: 16,
+              ),
             ),
-            splashRadius: 18,
-            visualDensity: VisualDensity.compact,
           ),
         ],
       ),
     );
   }
 
+  Widget _voiceStatusBadge({required bool compact}) {
+    return Obx(() {
+      final isSpeaking = controller.isSpeakingQuestion.value;
+      final bg = isSpeaking ? const Color(0xFFFFF3CD) : const Color(0xFFEAF7ED);
+      final border =
+          isSpeaking ? const Color(0xFFFFD166) : const Color(0xFFBEE3C8);
+      final iconColor =
+          isSpeaking ? AppColors.orange : const Color(0xFF2F855A);
+      final textColor =
+          isSpeaking ? const Color(0xFF7A5800) : const Color(0xFF1F5E3D);
+      final icon = isSpeaking ? Icons.volume_up_rounded : Icons.mic_rounded;
+
+      return Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(
+          horizontal: compact ? 10 : 12,
+          vertical: compact ? 8 : 9,
+        ),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: border, width: 1.3),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: iconColor, size: compact ? 15 : 16),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                controller.voiceInteractionStatus.value,
+                style: TextStyle(
+                  fontSize: compact ? 11 : 12,
+                  fontWeight: FontWeight.w800,
+                  color: textColor,
+                  fontFamily: 'Nunito',
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
   void _showVoiceGuideSheet() {
     Get.bottomSheet(
       Container(
         decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+          color: Color(0xFFFFF8F3),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
-        padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
         child: SafeArea(
           top: false,
           child: Column(
@@ -309,45 +501,134 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
                   width: 42,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE0E0E0),
+                    color: const Color(0xFFF0E8E0),
                     borderRadius: BorderRadius.circular(99),
                   ),
                 ),
               ),
-              const SizedBox(height: 14),
-              const Text(
-                'Panduan Suara Kuis',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textBlack,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Obx(
-                () => Text(
-                  controller.voicePromptText.value,
-                  style: TextStyle(
-                    fontSize: 12,
-                    height: 1.4,
-                    color: Colors.grey[800],
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: AppColors.yellow,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.yellow.withOpacity(0.5),
+                          blurRadius: 0,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.record_voice_over_rounded,
+                      color: AppColors.orange,
+                      size: 20,
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'Panduan Suara Kuis',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      color: _textDark,
+                      fontFamily: 'Nunito',
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
-              const Text(
-                'Perintah yang bisa dipakai:',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textBlack,
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFF0E8E0), width: 1.5),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Obx(
+                      () => Text(
+                        controller.voicePromptText.value,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          height: 1.5,
+                          color: _textGrey,
+                          fontFamily: 'Nunito',
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Perintah yang bisa dipakai:',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                        color: _textDark,
+                        fontFamily: 'Nunito',
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ...[
+                      ('mulai', 'membacakan soal pertama'),
+                      ('a / b / c / d', 'menjawab langsung via suara'),
+                      ('ulangi soal', 'membacakan soal lagi'),
+                      ('selanjutnya / sebelumnya', 'pindah soal'),
+                    ].map(
+                      (item) => Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              margin: const EdgeInsets.only(top: 3),
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: AppColors.orange,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: RichText(
+                                text: TextSpan(
+                                  children: [
+                                    TextSpan(
+                                      text: '"${item.$1}" ',
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w900,
+                                        color: AppColors.orange,
+                                        fontFamily: 'Nunito',
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text: 'untuk ${item.$2}',
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        color: _textGrey,
+                                        fontFamily: 'Nunito',
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 6),
-              const Text('mulai untuk membacakan soal pertama'),
-              const Text('a, b, c, atau d untuk menjawab'),
-              const Text('ulangi soal untuk membacakan soal lagi'),
-              const Text('selanjutnya atau sebelumnya untuk pindah soal'),
             ],
           ),
         ),
@@ -356,73 +637,8 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
     );
   }
 
-  Widget _titleCard(
-    String title,
-    int current,
-    int total, {
-    required bool compact,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(compact ? 8 : 12),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFFF8E1), Color(0xFFE3F2FD)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: compact ? 34 : 42,
-            height: compact ? 34 : 42,
-            decoration: BoxDecoration(
-              color: AppColors.orange,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.quiz_rounded, color: Colors.white),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: compact ? 13 : 15,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textBlack,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  'Soal $current dari $total',
-                  style: TextStyle(
-                    fontSize: compact ? 10 : 12,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey[700],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
+  // ── Title card ────────────────────────────────────────────────────────────
+  // ── Question map (peta soal) ──────────────────────────────────────────────
   Widget _questionMap(
     List<Map<String, dynamic>> questions,
     int activeIndex, {
@@ -433,80 +649,109 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
       controller.jawabanTeks.length;
       controller.selectedOptionKeys.length;
 
-      return LayoutBuilder(
-        builder: (context, constraints) {
-          final maxColumns = questions.length <= 10 ? questions.length : 10;
-          final columns = maxColumns == 0 ? 1 : maxColumns;
-          final available = constraints.maxWidth - ((columns - 1) * 6);
-          final seatWidth = (available / columns).clamp(
-            24.0,
-            compact ? 34.0 : 40.0,
-          );
-          final seatHeight = compact ? 28.0 : 34.0;
-
-          return Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(compact ? 8 : 10),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
+      return Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(compact ? 12 : 14),
+        decoration: BoxDecoration(
+          color: _surfaceWhite,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: _borderSoft, width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.orange.withOpacity(0.06),
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: AppColors.yellow.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.event_seat_rounded,
+                    color: AppColors.orange,
+                    size: 18,
+                  ),
                 ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Peta Soal',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                    color: _textDark,
+                    fontFamily: 'Nunito',
+                  ),
+                ),
+                const Spacer(),
+                if (!compact)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEAF7ED),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      'aktif menyala',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Color(0xFF3B6D11),
+                        fontFamily: 'Nunito',
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
               ],
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.event_seat_rounded,
-                      color: AppColors.orange,
-                    ),
-                    const SizedBox(width: 7),
-                    const Expanded(
-                      child: Text(
-                        'Peta soal',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textBlack,
-                        ),
-                      ),
-                    ),
-                    if (!compact)
-                      Text(
-                        'aktif menyala',
-                        style: TextStyle(fontSize: 10, color: Colors.grey[600]),
-                      ),
-                  ],
-                ),
-                SizedBox(height: compact ? 6 : 8),
-                Wrap(
+            SizedBox(height: compact ? 8 : 10),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final maxColumns =
+                    questions.length <= 10 ? questions.length : 10;
+                final columns = maxColumns == 0 ? 1 : maxColumns;
+                final available = constraints.maxWidth - ((columns - 1) * 6);
+                final seatWidth = (available / columns).clamp(
+                  24.0,
+                  compact ? 34.0 : 40.0,
+                );
+                final seatHeight = compact ? 28.0 : 34.0;
+
+                return Wrap(
                   spacing: 6,
                   runSpacing: 6,
                   children: List.generate(questions.length, (index) {
                     final isActive = index == activeIndex;
-                    final isAnswered = controller.hasAnswer(questions[index]);
-                    final color = isActive
+                    final isAnswered =
+                        controller.hasAnswer(questions[index]);
+                    final bgColor = isActive
                         ? AppColors.orange
                         : isAnswered
                         ? const Color(0xFF4CAF50)
-                        : const Color(0xFFE0E0E0);
+                        : const Color(0xFFF0E8E0);
                     return GestureDetector(
-                      onTap: () =>
-                          controller.goToQuestion(index, questions.length),
+                      onTap: () => controller.goToQuestion(
+                        index,
+                        questions.length,
+                      ),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 180),
                         width: seatWidth,
                         height: seatHeight,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          color: color,
+                          color: bgColor,
                           borderRadius: const BorderRadius.only(
                             topLeft: Radius.circular(9),
                             topRight: Radius.circular(9),
@@ -519,23 +764,25 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
                           style: TextStyle(
                             color: isActive || isAnswered
                                 ? Colors.white
-                                : AppColors.textBlack,
+                                : _textGrey,
                             fontSize: compact ? 11 : 13,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w900,
+                            fontFamily: 'Nunito',
                           ),
                         ),
                       ),
                     );
                   }),
-                ),
-              ],
+                );
+              },
             ),
-          );
-        },
+          ],
+        ),
       );
     });
   }
 
+  // ── Question card ─────────────────────────────────────────────────────────
   Widget _questionCard(
     Map<String, dynamic> q,
     int number,
@@ -543,7 +790,8 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
     required bool compact,
   }) {
     final id = _questionIdOf(q);
-    final questionStateKey = _questionStateKeyOf(q, fallbackIndex: number - 1);
+    final questionStateKey =
+        _questionStateKeyOf(q, fallbackIndex: number - 1);
     final teks =
         (q['pertanyaan'] ?? q['teks'] ?? q['question'] ?? q['soal'])
             ?.toString() ??
@@ -558,53 +806,67 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(compact ? 12 : 16),
+      padding: EdgeInsets.all(compact ? 14 : 18),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        color: _surfaceWhite,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _borderSoft, width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+            color: AppColors.orange.withOpacity(0.06),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Soal header
           Row(
             children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.yellow.withOpacity(0.35),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  'Soal $number',
+                  style: const TextStyle(
+                    color: Color(0xFFC14900),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                    fontFamily: 'Nunito',
+                  ),
+                ),
+              ),
+              const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
                   vertical: 5,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.orange.withOpacity(0.12),
+                  color: const Color(0xFFF0E8E0),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  'Soal $number',
+                  '$number/$total',
                   style: const TextStyle(
-                    color: AppColors.orange,
+                    color: _textGrey,
                     fontSize: 12,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
+                    fontFamily: 'Nunito',
                   ),
-                ),
-              ),
-              const Spacer(),
-              Text(
-                '$number/$total',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],
           ),
-          SizedBox(height: compact ? 8 : 12),
+          SizedBox(height: compact ? 10 : 14),
           Expanded(
             child: SingleChildScrollView(
               child: Column(
@@ -614,40 +876,83 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
                     teks,
                     style: TextStyle(
                       fontSize: compact ? 15 : 17,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textBlack,
-                      height: 1.32,
+                      fontWeight: FontWeight.w900,
+                      color: _textDark,
+                      fontFamily: 'Nunito',
+                      height: 1.35,
                     ),
                   ),
                   if (audioText != null && audioText.isNotEmpty) ...[
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 8,
+                        horizontal: 12,
+                        vertical: 10,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF7F8FA),
-                        borderRadius: BorderRadius.circular(10),
+                        color: const Color(0xFFFFF3CD),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color(0xFFFFD166),
+                          width: 1.5,
+                        ),
                       ),
-                      child: Text(
-                        'Audio: $audioText',
-                        style: TextStyle(fontSize: 11, color: Colors.grey[700]),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.volume_up_rounded,
+                            color: AppColors.orange,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              audioText,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF514000),
+                                fontFamily: 'Nunito',
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
-                  SizedBox(height: compact ? 10 : 14),
+                  SizedBox(height: compact ? 12 : 16),
                   if (opsi.length > 4) ...[
-                    Text(
-                      'Geser ke bawah untuk melihat semua pilihan jawaban.',
-                      style: TextStyle(
-                        fontSize: compact ? 10.5 : 11.5,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey[700],
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 7,
+                      ),
+                      margin: const EdgeInsets.only(bottom: 10),
+                      decoration: BoxDecoration(
+                        color: AppColors.orange.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.swipe_down_rounded,
+                            size: 14,
+                            color: AppColors.orange,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Geser ke bawah untuk semua pilihan',
+                            style: TextStyle(
+                              fontSize: compact ? 10.5 : 11.5,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.orange,
+                              fontFamily: 'Nunito',
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 8),
                   ],
                   if (tipe == 'pilihan' || tipe == 'listening')
                     _optionsGrid(
@@ -660,13 +965,43 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
                     TextField(
                       minLines: 4,
                       maxLines: compact ? 5 : 7,
-                      onChanged: (value) => controller.setJawabanTeks(id, value),
+                      onChanged: (value) =>
+                          controller.setJawabanTeks(id, value),
+                      style: const TextStyle(
+                        fontFamily: 'Nunito',
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        color: _textDark,
+                      ),
                       decoration: InputDecoration(
                         hintText: 'Tulis jawaban...',
+                        hintStyle: const TextStyle(
+                          color: Color(0xFFCCCCCC),
+                          fontFamily: 'Nunito',
+                          fontWeight: FontWeight.w600,
+                        ),
                         filled: true,
-                        fillColor: const Color(0xFFF7F8FA),
+                        fillColor: const Color(0xFFFFF8F3),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFF0E8E0),
+                            width: 1.5,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFF0E8E0),
+                            width: 1.5,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: const BorderSide(
+                            color: AppColors.orange,
+                            width: 1.5,
+                          ),
                         ),
                       ),
                     ),
@@ -679,6 +1014,7 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
     );
   }
 
+  // ── Options grid ──────────────────────────────────────────────────────────
   Widget _optionsGrid(
     List<Map<String, dynamic>> options,
     int questionId, {
@@ -686,7 +1022,16 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
     required bool compact,
   }) {
     if (options.isEmpty) {
-      return const Center(child: Text('Pilihan jawaban belum tersedia.'));
+      return Center(
+        child: Text(
+          'Pilihan jawaban belum tersedia.',
+          style: const TextStyle(
+            fontFamily: 'Nunito',
+            fontWeight: FontWeight.w600,
+            color: _textGrey,
+          ),
+        ),
+      );
     }
     final gap = compact ? 6.0 : 8.0;
     return Column(
@@ -705,12 +1050,14 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
     );
   }
 
-  List<Map<String, dynamic>> _visibleOptions(List<Map<String, dynamic>> options) {
+  List<Map<String, dynamic>> _visibleOptions(
+      List<Map<String, dynamic>> options) {
     return options.where((option) {
       return _normalizedOptionLabel(option['label']) != null;
     }).toList();
   }
 
+  // ── Option tile ───────────────────────────────────────────────────────────
   Widget _optionTile(
     Map<String, dynamic> option,
     int questionId, {
@@ -731,43 +1078,69 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
       final selected =
           (opsiId > 0 && controller.jawaban[questionId] == opsiId) ||
           controller.selectedOptionKeys[questionStateKey] == selectionKey;
-      return InkWell(
-        borderRadius: BorderRadius.circular(12),
+
+      return GestureDetector(
         onTap: () {
           controller.setSelectedOptionKey(questionStateKey, selectionKey);
           if (opsiId > 0) {
             controller.setJawaban(questionId, opsiId);
           }
         },
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
           padding: EdgeInsets.symmetric(
-            horizontal: compact ? 10 : 12,
-            vertical: compact ? 8 : 10,
+            horizontal: compact ? 12 : 14,
+            vertical: compact ? 10 : 12,
           ),
           decoration: BoxDecoration(
             color: selected
-                ? AppColors.orange.withOpacity(0.12)
-                : const Color(0xFFF7F8FA),
-            borderRadius: BorderRadius.circular(12),
+                ? AppColors.orange.withOpacity(0.08)
+                : const Color(0xFFFFF8F3),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: selected ? AppColors.orange : const Color(0xFFE5E7EB),
-              width: selected ? 2 : 1,
+              color: selected ? AppColors.orange : _borderSoft,
+              width: selected ? 2 : 1.5,
             ),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: AppColors.orange.withOpacity(0.12),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : [],
           ),
           child: Row(
             children: [
-              CircleAvatar(
-                radius: compact ? 14 : 16,
-                backgroundColor: selected ? AppColors.orange : Colors.white,
+              // Label circle
+              Container(
+                width: compact ? 32 : 36,
+                height: compact ? 32 : 36,
+                decoration: BoxDecoration(
+                  color: selected ? AppColors.orange : AppColors.yellow,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: (selected ? AppColors.orange : AppColors.yellow)
+                          .withOpacity(0.5),
+                      blurRadius: 0,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                alignment: Alignment.center,
                 child: Text(
                   label,
                   style: TextStyle(
                     color: selected ? Colors.white : AppColors.orange,
                     fontWeight: FontWeight.w900,
+                    fontSize: compact ? 13 : 14,
+                    fontFamily: 'Nunito',
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   text,
@@ -776,15 +1149,351 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
                   style: TextStyle(
                     fontSize: compact ? 13 : 14,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textBlack,
+                    color: selected ? _textDark : _textGrey,
+                    fontFamily: 'Nunito',
+                    height: 1.3,
+                  ),
+                ),
+              ),
+              if (selected) ...[
+                const SizedBox(width: 8),
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: AppColors.orange,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check_rounded,
+                    color: Colors.white,
+                    size: 14,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    });
+  }
+
+  // ── Navigation bar ────────────────────────────────────────────────────────
+  Widget _navigationBar({
+    required bool isFirst,
+    required bool isLast,
+    required int totalQuestions,
+    required bool compact,
+  }) {
+    return Row(
+      children: [
+        Expanded(
+          child: GestureDetector(
+            onTap: isFirst
+                ? null
+                : () => controller.previousQuestion(totalQuestions),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              height: compact ? 46 : 52,
+              decoration: BoxDecoration(
+                color: isFirst
+                    ? const Color(0xFFF0E8E0)
+                    : _surfaceWhite,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isFirst ? const Color(0xFFF0E8E0) : _borderSoft,
+                  width: 1.5,
+                ),
+              ),
+              alignment: Alignment.center,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    size: 16,
+                    color: isFirst ? const Color(0xFFCCCCCC) : AppColors.orange,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Sebelumnya',
+                    style: TextStyle(
+                      fontFamily: 'Nunito',
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
+                      color:
+                          isFirst ? const Color(0xFFCCCCCC) : AppColors.orange,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Obx(
+            () => GestureDetector(
+              onTap: controller.isSubmitting.value
+                  ? null
+                  : () async {
+                      controller.showVoiceStartPrompt.value = false;
+                      if (!isLast) {
+                        controller.nextQuestion(totalQuestions);
+                        return;
+                      }
+                      final res = await controller.submit();
+                      if (res != null) _showResult(res);
+                    },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                height: compact ? 46 : 52,
+                decoration: BoxDecoration(
+                  color: isLast
+                      ? const Color(0xFF4CAF50)
+                      : AppColors.orange,
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (isLast
+                              ? const Color(0xFF4CAF50)
+                              : AppColors.orange)
+                          .withOpacity(0.35),
+                      blurRadius: 0,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                alignment: Alignment.center,
+                child: controller.isSubmitting.value
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            isLast ? 'Kirim Jawaban' : 'Selanjutnya',
+                            style: const TextStyle(
+                              fontFamily: 'Nunito',
+                              fontWeight: FontWeight.w900,
+                              fontSize: 14,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Icon(
+                            isLast
+                                ? Icons.send_rounded
+                                : Icons.arrow_forward_ios_rounded,
+                            size: 15,
+                            color: Colors.white,
+                          ),
+                        ],
+                      ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Completed state ───────────────────────────────────────────────────────
+  Widget _completedState() {
+    final score = controller.completedScore.value.isNotEmpty
+        ? controller.completedScore.value
+        : '-';
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Center(
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFFFF98A),
+                Color(0xFFFFEA3D),
+                Color(0xFFFFD92E),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFFFD92E).withOpacity(0.35),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.5),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.verified_rounded,
+                  color: Color(0xFF4CAF50),
+                  size: 40,
+                ),
+              ),
+              const SizedBox(height: 14),
+              const Text(
+                'Kuis Sudah Dikerjakan! 🎉',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xFFB93D00),
+                  fontFamily: 'Nunito',
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Text(
+                  'Nilai kamu: $score',
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF9B3A00),
+                    fontFamily: 'Nunito',
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              GestureDetector(
+                onTap: Get.back,
+                child: Container(
+                  width: double.infinity,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.88),
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFE0B84A).withOpacity(0.4),
+                        blurRadius: 0,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  alignment: Alignment.center,
+                  child: const Text(
+                    'Kembali ke Profil',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFFC14900),
+                      fontFamily: 'Nunito',
+                    ),
                   ),
                 ),
               ),
             ],
           ),
         ),
-      );
-    });
+      ),
+    );
+  }
+
+  // ── Helper methods (tidak berubah) ────────────────────────────────────────
+  List<Map<String, dynamic>> _questions(Map<String, dynamic> kuis) {
+    final raw =
+        kuis['pertanyaan'] ??
+        kuis['pertanyaans'] ??
+        kuis['questions'] ??
+        kuis['soal'];
+    if (raw is List) return raw.cast<Map<String, dynamic>>();
+    return const [];
+  }
+
+  Widget _errorState(String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.08),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.error_outline_rounded,
+                color: Colors.red,
+                size: 32,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.redAccent,
+                fontSize: 14,
+                height: 1.5,
+                fontFamily: 'Nunito',
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 16),
+            GestureDetector(
+              onTap: controller.fetchDetail,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.orange,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.orange.withOpacity(0.35),
+                      blurRadius: 0,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: const Text(
+                  'Coba Lagi',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontFamily: 'Nunito',
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   String? _normalizedOptionLabel(dynamic value) {
@@ -828,7 +1537,6 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
   String _optionSelectionKey(Map<String, dynamic> option) {
     final opsiId = _optionIdOf(option);
     if (opsiId > 0) return 'id:$opsiId';
-
     final label = _normalizedOptionLabel(option['label']) ?? '';
     final text =
         (option['teks'] ?? option['text'] ?? option['jawaban'] ?? '')
@@ -844,7 +1552,6 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
   }) {
     final questionId = _questionIdOf(question);
     if (questionId > 0) return 'id:$questionId';
-
     final text =
         (question['pertanyaan'] ??
                 question['teks'] ??
@@ -859,253 +1566,103 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
     return 'question:${question.hashCode}';
   }
 
-  Widget _navigationBar({
-    required bool isFirst,
-    required bool isLast,
-    required int totalQuestions,
-    required bool compact,
-  }) {
-    return Row(
-      children: [
-        Expanded(
-          child: OutlinedButton(
-            onPressed: isFirst
-                ? null
-                : () => controller.previousQuestion(totalQuestions),
-            style: OutlinedButton.styleFrom(
-              padding: EdgeInsets.symmetric(vertical: compact ? 11 : 14),
-              foregroundColor: AppColors.orange,
-              side: const BorderSide(color: AppColors.orange),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text('Sebelumnya'),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Obx(
-            () => ElevatedButton(
-              onPressed: controller.isSubmitting.value
-                  ? null
-                  : () async {
-                      controller.showVoiceStartPrompt.value = false;
-                      if (!isLast) {
-                        controller.nextQuestion(totalQuestions);
-                        return;
-                      }
-                      final res = await controller.submit();
-                      if (res != null) _showResult(res);
-                    },
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(vertical: compact ? 11 : 14),
-                backgroundColor: isLast
-                    ? const Color(0xFF4CAF50)
-                    : AppColors.orange,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: controller.isSubmitting.value
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : Text(isLast ? 'Kirim Jawaban' : 'Selanjutnya'),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _completedState() {
-    final score = controller.completedScore.value.isNotEmpty
-        ? controller.completedScore.value
-        : '-';
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Center(
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFFFFF3E0), Color(0xFFE8F5E9)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(18),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.verified_rounded,
-                color: Color(0xFF4CAF50),
-                size: 52,
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Kuis sudah dikerjakan',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 19,
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.textBlack,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Nilai kamu: $score',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.orange,
-                ),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: Get.back,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.orange,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('Kembali'),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  List<Map<String, dynamic>> _questions(Map<String, dynamic> kuis) {
-    final raw =
-        kuis['pertanyaan'] ??
-        kuis['pertanyaans'] ??
-        kuis['questions'] ??
-        kuis['soal'];
-    if (raw is List) return raw.cast<Map<String, dynamic>>();
-    return const [];
-  }
-
-  Widget _errorState(String message) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.redAccent,
-                fontSize: 13,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: controller.fetchDetail,
-              child: const Text('Coba lagi'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   void _showResult(Map<String, dynamic> res) {
     final skor = res['skor']?.toString() ?? '-';
     final benar = res['total_benar']?.toString() ?? '-';
     final total = res['total_pertanyaan']?.toString() ?? '-';
     final scoreNumber = double.tryParse(skor) ?? 0;
-    final badgeColor = scoreNumber >= 80
+    final isGreat = scoreNumber >= 80;
+    final isOkay = scoreNumber >= 60;
+    final badgeColor = isGreat
         ? const Color(0xFF4CAF50)
-        : scoreNumber >= 60
-        ? const Color(0xFFFFB300)
+        : isOkay
+        ? AppColors.orange
         : const Color(0xFFFF7043);
+    final badgeGradient = isGreat
+        ? [const Color(0xFFE8F5E9), const Color(0xFFFFF8F3)]
+        : isOkay
+        ? [const Color(0xFFFFF98A), const Color(0xFFFFF3CD)]
+        : [const Color(0xFFFFEBEE), const Color(0xFFFFF8F3)];
 
     controller.isCompleted.value = true;
     controller.completedScore.value = skor;
 
     Get.dialog(
       Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFFFFF3E0), Color(0xFFE1F5FE), Color(0xFFE8F5E9)],
+            gradient: LinearGradient(
+              colors: badgeGradient,
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(24),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 78,
-                height: 78,
+                width: 80,
+                height: 80,
                 decoration: BoxDecoration(
-                  color: badgeColor,
+                  color: badgeColor.withOpacity(0.15),
                   shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: badgeColor.withOpacity(0.32),
-                      blurRadius: 18,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
                 ),
-                child: const Icon(
-                  Icons.emoji_events_rounded,
-                  color: Colors.white,
+                child: Icon(
+                  isGreat
+                      ? Icons.emoji_events_rounded
+                      : isOkay
+                      ? Icons.thumb_up_rounded
+                      : Icons.sentiment_satisfied_rounded,
+                  color: badgeColor,
                   size: 42,
                 ),
               ),
               const SizedBox(height: 14),
               const Text(
-                'Kuis selesai!',
+                'Kuis Selesai!',
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w900,
-                  color: AppColors.textBlack,
+                  color: _textDark,
+                  fontFamily: 'Nunito',
                 ),
               ),
-              const SizedBox(height: 6),
-              Text(
+              const SizedBox(height: 4),
+              const Text(
                 'Nilai yang kamu dapat',
-                style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: _textGrey,
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 16),
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 18),
+                padding: const EdgeInsets.symmetric(vertical: 20),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.92),
-                  borderRadius: BorderRadius.circular(14),
+                  color: Colors.white.withOpacity(0.85),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: badgeColor.withOpacity(0.2),
+                    width: 1.5,
+                  ),
                 ),
                 child: Column(
                   children: [
                     Text(
                       skor,
                       style: TextStyle(
-                        fontSize: 46,
+                        fontSize: 52,
                         fontWeight: FontWeight.w900,
                         color: badgeColor,
+                        fontFamily: 'Nunito',
                         height: 1,
                       ),
                     ),
@@ -1115,35 +1672,121 @@ class ProfileQuizDetailView extends GetView<ProfileQuizDetailController> {
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.textBlack,
+                        color: _textDark,
+                        fontFamily: 'Nunito',
                       ),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                height: 46,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Get.back();
-                    Get.back();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.orange,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+              GestureDetector(
+                onTap: () {
+                  Get.back();
+                  Get.back();
+                },
+                child: Container(
+                  width: double.infinity,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: AppColors.orange,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.orange.withOpacity(0.35),
+                        blurRadius: 0,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  alignment: Alignment.center,
+                  child: const Text(
+                    'Selesai',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      fontFamily: 'Nunito',
                     ),
                   ),
-                  child: const Text('Selesai'),
                 ),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _VoicePulseButton extends StatefulWidget {
+  final Widget child;
+
+  const _VoicePulseButton({required this.child});
+
+  @override
+  State<_VoicePulseButton> createState() => _VoicePulseButtonState();
+}
+
+class _VoicePulseButtonState extends State<_VoicePulseButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
+    _scale = Tween<double>(begin: 1.0, end: 1.25).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        ScaleTransition(
+          scale: _scale,
+          child: Container(
+            width: 58,
+            height: 58,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: AppColors.orange.withOpacity(0.25),
+                width: 2,
+              ),
+            ),
+          ),
+        ),
+        Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: AppColors.orange,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.orange.withOpacity(0.35),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: widget.child,
+        ),
+      ],
     );
   }
 }

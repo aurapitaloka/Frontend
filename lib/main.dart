@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'core/controllers/voice_command_controller.dart';
+import 'core/services/voice_guide_service.dart';
 import 'features/dashboard/controller/dashboard_controller.dart';
 import 'routes/app_pages.dart';
 import 'routes/app_routes.dart';
@@ -38,6 +39,12 @@ Future<void> main() async {
   }
 
   voice.setGlobalCommands({
+    'menu': () => VoiceGuideService.instance.speak(
+      'Sebutkan menu tujuan, misalnya dashboard, rak buku, AAC, atau profil.',
+    ),
+    'buka menu': () => VoiceGuideService.instance.speak(
+      'Sebutkan menu tujuan, misalnya dashboard, rak buku, AAC, atau profil.',
+    ),
     'dashboard': () => openDashboardTab(0),
     'beranda': () => openDashboardTab(0),
     'home': () => openDashboardTab(0),
@@ -73,6 +80,8 @@ Future<void> main() async {
     'buka menu panduan': () => Get.toNamed(AppRoutes.panduan),
     'edit profil': () => Get.toNamed(AppRoutes.editProfile),
     'edit profile': () => Get.toNamed(AppRoutes.editProfile),
+    'menu edit profil': () => Get.toNamed(AppRoutes.editProfile),
+    'menu edit profile': () => Get.toNamed(AppRoutes.editProfile),
     'ubah profil': () => Get.toNamed(AppRoutes.editProfile),
     'ubah profile': () => Get.toNamed(AppRoutes.editProfile),
     'buka edit profil': () => Get.toNamed(AppRoutes.editProfile),
@@ -80,12 +89,18 @@ Future<void> main() async {
     'kuis': () => Get.toNamed(AppRoutes.profileQuiz),
     'buka kuis': () => Get.toNamed(AppRoutes.profileQuiz),
     'menu kuis': () => Get.toNamed(AppRoutes.profileQuiz),
+    'buka menu kuis': () => Get.toNamed(AppRoutes.profileQuiz),
     'catatan': () => Get.toNamed(AppRoutes.profileNotes),
     'buka catatan': () => Get.toNamed(AppRoutes.profileNotes),
     'menu catatan': () => Get.toNamed(AppRoutes.profileNotes),
+    'buka menu catatan': () => Get.toNamed(AppRoutes.profileNotes),
     'pengaturan suara': () => Get.toNamed(AppRoutes.profileVoiceSettings),
+    'menu pengaturan suara': () => Get.toNamed(AppRoutes.profileVoiceSettings),
     'setelan suara': () => Get.toNamed(AppRoutes.profileVoiceSettings),
+    'menu setelan suara': () => Get.toNamed(AppRoutes.profileVoiceSettings),
     'buka pengaturan suara': () => Get.toNamed(AppRoutes.profileVoiceSettings),
+    'buka menu pengaturan suara': () =>
+        Get.toNamed(AppRoutes.profileVoiceSettings),
     'kembali': () => Get.back(),
     'tutup': () => Get.back(),
     'stop': () => voice.stopListening(),
@@ -100,6 +115,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final voice = Get.find<VoiceCommandController>();
     return GetMaterialApp(
       title: 'Ruma',
       debugShowCheckedModeBanner: false,
@@ -112,10 +128,17 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
         fontFamily: 'Roboto',
       ),
-      initialRoute: AppRoutes.splash,
+      initialRoute: AppRoutes.welcome,
       getPages: AppPages.routes,
       defaultTransition: Transition.fade,
       transitionDuration: const Duration(milliseconds: 300),
+      builder: (context, child) {
+        return Listener(
+          behavior: HitTestBehavior.translucent,
+          onPointerDown: (_) => voice.registerUserInteraction(),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../routes/app_routes.dart';
+import '../../../core/utils/app_colors.dart';
 
 class WelcomeView extends StatefulWidget {
   const WelcomeView({super.key});
@@ -45,228 +46,315 @@ class _WelcomeViewState extends State<WelcomeView>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // ====== LOGO SECTION ======
-            FadeTransition(
-              opacity: _fadeAnimation,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 32),
-                child: Column(
-                  children: [
-                    // Logo dengan subtle shadow
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.08),
-                            blurRadius: 20,
-                            spreadRadius: 2,
+      backgroundColor: const Color(0xFFFFF8F3),
+      body: Stack(
+        children: [
+          // ── Background decorative bubbles (sama seperti LoginView) ──
+          Positioned(
+            top: -40,
+            right: -40,
+            child: Container(
+              width: 180,
+              height: 180,
+              decoration: BoxDecoration(
+                color: AppColors.yellow.withOpacity(0.45),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          Positioned(
+            top: 80,
+            left: -50,
+            child: Container(
+              width: 130,
+              height: 130,
+              decoration: BoxDecoration(
+                color: AppColors.orange.withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: -30,
+            right: 30,
+            child: Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                color: AppColors.orange.withOpacity(0.08),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+
+          // ── Main content ──
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 24),
+
+                  // ── Logo & Brand ──────────────────────────────────────
+                  FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Logo circle
+                        Container(
+                          width: 72,
+                          height: 72,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.08),
+                                blurRadius: 20,
+                                spreadRadius: 2,
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: Image.asset(
-                        'assets/images/logo_hand.webp',
-                        width: 64,
-                        height: 64,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            width: 64,
-                            height: 64,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFF6B00),
-                              borderRadius: BorderRadius.circular(32),
+                          child: ClipOval(
+                            child: Padding(
+                              padding: const EdgeInsets.all(10),
+                              child: Image.asset(
+                                'assets/images/app_logo.png',
+                                width: 72,
+                                height: 72,
+                                fit: BoxFit.contain,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    color: Colors.white,
+                                    child: const Icon(
+                                      Icons.pan_tool,
+                                      color: AppColors.orange,
+                                      size: 36,
+                                    ),
+                                  );
+                                },
+                              ),
                             ),
-                            child: const Icon(
-                              Icons.pan_tool,
-                              color: Colors.white,
-                              size: 32,
-                            ),
-                          );
-                        },
-                      ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Tagline kecil
+                        const Text(
+                          'Selamat datang di',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF999999),
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'Nunito',
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+
+                        // Brand name, gaya sama dgn LoginView
+                        const Text(
+                          'Aplikasi Belajar',
+                          style: TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF1A1A2E),
+                            fontFamily: 'Nunito',
+                            height: 1.1,
+                          ),
+                        ),
+                        const Text(
+                          'Ruma',
+                          style: TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.orange,
+                            fontFamily: 'Nunito',
+                            height: 1.1,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    ShaderMask(
-                      shaderCallback: (bounds) => const LinearGradient(
-                        colors: [Color(0xFFFF6B00), Color(0xFFFF8C42)],
-                      ).createShader(bounds),
-                      child: const Text(
-                        'Ruma',
-                        style: TextStyle(
-                          fontSize: 44,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: 2,
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // ── Illustration ─────────────────────────────────────
+                  Expanded(
+                    child: SlideTransition(
+                      position: _slideAnimation,
+                      child: FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: Center(
+                          child: Image.asset(
+                            'assets/images/welcome_illustration.webp',
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                height: 240,
+                                decoration: BoxDecoration(
+                                  color: AppColors.orange.withOpacity(0.06),
+                                  borderRadius: BorderRadius.circular(24),
+                                ),
+                                child: Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.accessibility_new,
+                                        size: 80,
+                                        color: AppColors.orange.withOpacity(0.4),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      const Text(
+                                        'Ilustrasi Selamat Datang',
+                                        style: TextStyle(
+                                          color: Color(0xFFCCCCCC),
+                                          fontSize: 14,
+                                          fontFamily: 'Nunito',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Belajar Tanpa Batas',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[600],
-                        fontWeight: FontWeight.w500,
+                  ),
+
+                  // ── Feature banner (gaya VoiceHintBanner dari LoginView) ──
+                  FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF3CD),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: const Color(0xFFFFD166),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _buildFeature(Icons.mic_rounded, 'Perintah Suara'),
+                          Container(
+                              width: 1,
+                              height: 30,
+                              color: const Color(0xFFFFD166)),
+                          _buildFeature(
+                              Icons.volume_up_rounded, 'Audio'),
+                          Container(
+                              width: 1,
+                              height: 30,
+                              color: const Color(0xFFFFD166)),
+                          _buildFeature(Icons.school_outlined, 'Belajar'),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              ),
-            ),
+                  ),
 
-            const SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
-            // ====== ILLUSTRATION SECTION ======
-            Expanded(
-              child: SlideTransition(
-                position: _slideAnimation,
-                child: FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 32),
-                      child: Image.asset(
-                        'assets/images/welcome_illustration.webp',
-                        fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            height: 260,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[100],
-                              borderRadius: BorderRadius.circular(24),
-                            ),
-                            child: Center(
-                              child: Column(
+                  // ── Buttons ──────────────────────────────────────────
+                  SlideTransition(
+                    position: _slideAnimation,
+                    child: FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: Column(
+                        children: [
+                          // Login Button — gaya _LoginButton dari LoginView
+                          GestureDetector(
+                            onTap: () => Get.toNamed(AppRoutes.login),
+                            child: Container(
+                              width: double.infinity,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                color: AppColors.yellow,
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFFE0B84A)
+                                        .withOpacity(0.8),
+                                    blurRadius: 0,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: const Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(
-                                    Icons.accessibility_new,
-                                    size: 80,
-                                    color: Colors.grey[400],
-                                  ),
-                                  const SizedBox(height: 16),
+                                  Icon(Icons.login_rounded,
+                                      color: Color(0xFF1A1A2E), size: 22),
+                                  SizedBox(width: 10),
                                   Text(
-                                    'Welcome Illustration',
+                                    'Login',
                                     style: TextStyle(
-                                      color: Colors.grey[600],
-                                      fontSize: 14,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w900,
+                                      color: Color(0xFF1A1A2E),
+                                      fontFamily: 'Nunito',
+                                      letterSpacing: 0.5,
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                          );
-                        },
+                          ),
+
+                          const SizedBox(height: 12),
+
+                          // Register Button — outlined, konsisten dgn input border LoginView
+                          GestureDetector(
+                            onTap: () => Get.toNamed(AppRoutes.register),
+                            child: Container(
+                              width: double.infinity,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: const Color(0xFFF0E8E0),
+                                  width: 2,
+                                ),
+                              ),
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.person_add_alt_1_rounded,
+                                      color: AppColors.orange, size: 22),
+                                  SizedBox(width: 10),
+                                  Text(
+                                    'Register',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w900,
+                                      color: Color(0xFF1A1A2E),
+                                      fontFamily: 'Nunito',
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                ),
+
+                  const SizedBox(height: 24),
+                ],
               ),
             ),
-
-            // ====== INFO SECTION ======
-            FadeTransition(
-              opacity: _fadeAnimation,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 40),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFF8E1),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _buildFeature(Icons.mic, 'Suara'),
-                      Container(width: 1, height: 30, color: Colors.grey[300]),
-                      _buildFeature(Icons.volume_up_rounded, 'Suara'),
-                      Container(width: 1, height: 30, color: Colors.grey[300]),
-                      _buildFeature(Icons.school_outlined, 'Belajar'),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 28),
-
-            // ====== BUTTONS SECTION ======
-            SlideTransition(
-              position: _slideAnimation,
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(32, 0, 32, 24),
-                  child: Column(
-                    children: [
-                      // Login Button
-                      SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: ElevatedButton(
-                          onPressed: () => Get.toNamed(AppRoutes.login),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFFFEB3B),
-                            foregroundColor: Colors.black,
-                            elevation: 2,
-                            shadowColor: Colors.black.withOpacity(0.2),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          child: const Text(
-                            'Login',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      // Register Button
-                      SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: OutlinedButton(
-                          onPressed: () => Get.toNamed(AppRoutes.register),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.black87,
-                            side: BorderSide(
-                              color: Colors.grey[300]!,
-                              width: 2,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          child: const Text(
-                            'Register',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 8),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -275,14 +363,15 @@ class _WelcomeViewState extends State<WelcomeView>
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: const Color(0xFFFF6B00), size: 26),
+        Icon(icon, color: AppColors.orange, size: 24),
         const SizedBox(height: 6),
         Text(
           label,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: Colors.grey[700],
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF888888),
+            fontFamily: 'Nunito',
           ),
         ),
       ],
